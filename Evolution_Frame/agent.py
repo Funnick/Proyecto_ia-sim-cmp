@@ -1,14 +1,31 @@
 import object_base
 import action
+import gene
 from random import randint
 
 
 class Agent(object_base.ObjectBase):
-    def __init__(self, pos_x, pos_y, sense, max_energy):
+    """
+    Clase que reprenseta a los agentes de la simulación.
+    """
+
+    def __init__(self, pos_x, pos_y, max_energy):
+        """
+        Inicializa un agente en la posición (pos_x, pos_y) con una energía máxima (max_energy).
+
+        :param pos_x: coordenada x del agente
+        :type pos_x: int
+        :param pos_y: coordenada y del agente
+        :type pos_y: int
+        :param max_energy: energía máxima del agente
+        :type max_energy: int
+
+        :rtype: Agent
+        """
         object_base.ObjectBase.__init__(self, pos_x, pos_y)
         self.perception_pos_x = -1
         self.perception_pos_y = -1
-        self.sense = sense
+        self.sense_gene = gene.SenseGene(5, 0.5)
         self.food_eat_today = 0
         self.max_energy = max_energy
         self.current_energy = max_energy
@@ -17,6 +34,15 @@ class Agent(object_base.ObjectBase):
         return "Agent"
 
     def get_random_move(self, perception):
+        """
+        Devuelve una acción que mueve al agente en una dirección.
+
+        :param perception: parte del mundo que es percibida por el agente
+        :type perception: World
+
+        :rtype: Action
+        :return: [moves[randint(0, len(moves) - 1)]]
+        """
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         directions_actions = [
             action.MoveNorth(),
@@ -36,6 +62,21 @@ class Agent(object_base.ObjectBase):
         return [moves[randint(0, len(moves) - 1)]]
 
     def make_plan(self, cell, pi, plan, dimension_y):
+        """
+        Devuelve una lista de acciones que consituye el plan del agente.
+
+        :param cell: última casilla vista en el BFS
+        :type cell: (int, int)
+        :param pi: arreglo pi del BFS
+        :type pi: (int, int) list
+        :param plan: lista de acciones que se debe tomar en la casilla i-ésima
+        :type plan: Action list
+        :param dimension_y: ancho del mundo para poder cambiar las dimensiones de pi y plan.
+        :type dimension_y: int
+
+        :rtype: Action list
+        :return: new_plan
+        """
         new_plan = [plan[cell[0] * dimension_y + cell[1]]]
         cell = pi[cell[0] * dimension_y + cell[1]]
 
@@ -46,6 +87,16 @@ class Agent(object_base.ObjectBase):
         return new_plan
 
     def look_for_food(self, perception):
+        """
+        Devuelve una lista de acciones que se deben realizar para conseguir comida.
+        En caso de no haber una acción clara en la percepción se devuelve una
+        acción de moverse aleatoria.
+
+        :param perception: parte del mundo que es percibida por el agente
+        :type perception: World
+
+        :rtype: Action list
+        """
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         directions_actions = [
             action.MoveNorth(),
@@ -89,6 +140,16 @@ class Agent(object_base.ObjectBase):
         return self.get_random_move(perception)
 
     def go_to_edge(self, perception):
+        """
+        Devuelve una lista de acciones que se deben realizar para conseguir llegar al borde.
+        En caso de no haber una acción clara en la percepción se devuelve una
+        acción de moverse aleatoria.
+
+        :param perception: parte del mundo que es percibida por el agente
+        :type perception: World
+
+        :rtype: Action list
+        """
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         directions_actions = [
             action.MoveNorth(),
@@ -132,6 +193,14 @@ class Agent(object_base.ObjectBase):
         return self.get_random_move(perception)
 
     def play(self, perception):
+        """
+        Devuelve la acción que se debe realizar para conseguir algún objetivo.
+
+        :param perception: parte del mundo que es percibida por el agente
+        :type perception: World
+
+        :rtype: Action
+        """
         if self.current_energy == 0:
             return action.DoNothing()
         if self.food_eat_today == 0 or (
@@ -141,13 +210,44 @@ class Agent(object_base.ObjectBase):
         return self.go_to_edge(perception)[0]
 
     def see(self, world):
-        left_corner_x = max(0, self.pos_x - self.sense)
-        left_corner_y = max(0, self.pos_y - self.sense)
-        right_corner_x = min(self.pos_x + self.sense, world.dimension_x - 1)
-        right_corner_y = min(self.pos_y + self.sense, world.dimension_y - 1)
+        """
+        Devuelve la percepción del mundo que tiene el agente.
+        La percepción es nuevo mundo, de tamaño dimension_x * dimension_y,
+        que es una copia de un lugar del mundo original. La parte que
+        es copiada es el cuadrado que tiene esquina superior izqueda
+        (left_corner_x y left_corner_y) y esquina inferior derecha
+        (right_corner_x y right_corner_y).
 
-        self.perception_pos_x = min(self.pos_x, self.sense)
-        self.perception_pos_y = min(self.pos_y, self.sense)
+        :param left_corner_x: coordenada x, esquina superior izquierda
+        :type left_corner_x: int
+        :param left_corner_y: coordenada y, esquina superior izquierda
+        :type left_corner_y: int
+        :param right_corner_x: coordenada x, esquina inferior derecha
+        :type right_corner_x: int
+        :param right_corner_y: coordenada y, esquina inferior derecha
+        :type right_corner_y: int
+        :param dimension_x: largo de la copia
+        :type dimension_x: int
+        :param dimension_y: ancho de la copia
+        :type dimension_y: int
+
+        :rtype: World
+        :return: world.get_a_peek(
+            left_corner_x,
+            left_corner_y,
+            right_corner_x,
+            right_corner_y,
+            right_corner_x - left_corner_x + 1,
+            right_corner_y - left_corner_y + 1,
+        )
+        """
+        left_corner_x = max(0, self.pos_x - self.sense_gene.value)
+        left_corner_y = max(0, self.pos_y - self.sense_gene.value)
+        right_corner_x = min(self.pos_x + self.sense_gene.value, world.dimension_x - 1)
+        right_corner_y = min(self.pos_y + self.sense_gene.value, world.dimension_y - 1)
+
+        self.perception_pos_x = min(self.pos_x, self.sense_gene.value)
+        self.perception_pos_y = min(self.pos_y, self.sense_gene.value)
 
         return world.get_a_peek(
             left_corner_x,

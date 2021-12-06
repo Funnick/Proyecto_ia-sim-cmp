@@ -1,15 +1,37 @@
 class Action:
+    """
+    Clase base de todas la acciones.
+    """
+
     def execute(self, world, agent):
+        """
+        Ejecuta una acción cambiando el estado del mundo y agente
+
+        :param world: instancia del mundo
+        :type world: World
+        :param agent: instancia del agente
+        :type agent: Agent
+
+        :rtype: None
+        """
         agent.current_energy = agent.current_energy - 1
         pass
 
 
 class DoNothing(Action):
+    """
+    Acción de no hacer nada
+    """
+
     def execute(self, world, agent):
         pass
 
 
 class MoveNorth(Action):
+    """
+    Mueve al agente en dirección norte
+    """
+
     def execute(self, world, agent):
         Action.execute(self, world, agent)
         world.move_agent(agent, agent.pos_x - 1, agent.pos_y)
@@ -17,6 +39,10 @@ class MoveNorth(Action):
 
 
 class MoveSouth(Action):
+    """
+    Mueve al agente en dirección sur
+    """
+
     def execute(self, world, agent):
         Action.execute(self, world, agent)
         world.move_agent(agent, agent.pos_x + 1, agent.pos_y)
@@ -24,6 +50,10 @@ class MoveSouth(Action):
 
 
 class MoveEast(Action):
+    """
+    Mueve al agente en dirección este
+    """
+
     def execute(self, world, agent):
         Action.execute(self, world, agent)
         world.move_agent(agent, agent.pos_x, agent.pos_y + 1)
@@ -31,6 +61,10 @@ class MoveEast(Action):
 
 
 class MoveWest(Action):
+    """
+    Mueve al agente en dirección oeste
+    """
+
     def execute(self, world, agent):
         Action.execute(self, world, agent)
         world.move_agent(agent, agent.pos_x, agent.pos_y - 1)
@@ -38,6 +72,10 @@ class MoveWest(Action):
 
 
 class Eat(Action):
+    """
+    Acción de comer
+    """
+
     def execute(self, world, agent):
         Action.execute(self, world, agent)
         if world.agent_eat_food(agent.pos_x, agent.pos_y):
