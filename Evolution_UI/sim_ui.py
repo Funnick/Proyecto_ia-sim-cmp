@@ -89,12 +89,7 @@ def in_range(coord, w, h):
         return True
     else: return False
 
-def main():
-    print("Bienvenido al Evolution")
-    
-    width = int(input("Input width: "))
-    height = int(input("Input height: "))
-  
+def main(width, height, iterations):
     screen = pygame.display.set_mode((width, height))
     screen.fill((0,100,0))
     pygame.display.set_caption("Evolution")
@@ -102,7 +97,7 @@ def main():
     game = Game(width=width, height=height)     
     clock = pygame.time.Clock()
      
-    while True:
+    while iterations:
         clock.tick(30)
          
         game.paint(screen)
@@ -111,14 +106,13 @@ def main():
          
         for event in pygame.event.get():
             if event.type == QUIT:
-                exit(0)
+                pygame.quit()
+                break
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
-                exit(0)
+                pygame.quit()
+                break
          
         pygame.display.flip()
-     
-    return 0
-
-if __name__ == '__main__':
-    pygame.init()
-    main()
+        iterations -= 1
+    pygame.quit()
+    return game._agents
