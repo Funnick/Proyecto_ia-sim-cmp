@@ -9,7 +9,7 @@ class Agent(object_base.ObjectBase):
     Clase que reprenseta a los agentes de la simulación.
     """
 
-    def __init__(self, pos_x, pos_y, max_energy):
+    def __init__(self, pos_x, pos_y, max_energy, sense_gene):
         """
         Inicializa un agente en la posición (pos_x, pos_y) con una energía máxima (max_energy).
 
@@ -25,13 +25,37 @@ class Agent(object_base.ObjectBase):
         object_base.ObjectBase.__init__(self, pos_x, pos_y)
         self.perception_pos_x = -1
         self.perception_pos_y = -1
-        self.sense_gene = gene.SenseGene(5, 0.5)
+        self.sense_gene = sense_gene
         self.food_eat_today = 0
         self.max_energy = max_energy
         self.current_energy = max_energy
 
     def __str__(self):
         return "Agent"
+
+    def reduce_energy_to_perform_an_action(self):
+        """
+        Devuelve verdadero en caso de que se pueda consumir energía
+        para realizar una acción, falso en otro caso.
+
+        :rtype: bool
+        :return: self.current_energy >= self.sense_gene.value
+        """
+
+        if self.current_energy >= self.sense_gene.value:
+            self.current_energy = self.current_energy - self.sense_gene.value
+            return True
+        return False
+
+    def replicate(self):
+        """
+        Devuelve un nuevo agente que puede tener características mutadas,
+        es el resultado de una reproducción asexual.
+
+        :rtype: Agent
+        :return: Agent(...)
+        """
+        return Agent(-1, -1, self.max_energy, self.sense_gene.mutate())
 
     def get_random_move(self, perception):
         """

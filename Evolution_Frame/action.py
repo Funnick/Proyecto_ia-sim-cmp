@@ -14,7 +14,6 @@ class Action:
 
         :rtype: None
         """
-        agent.current_energy = agent.current_energy - 1
         pass
 
 
