@@ -32,7 +32,7 @@ class Simulator:
         """
         self.world = world.World(dimension_x, dimension_y)
 
-    def create_agent(self, max_energy, sense):
+    def add_agent_to_simulation(self, agent):
         """
         Añade un nuevo agente a la simulación.
 
@@ -42,9 +42,10 @@ class Simulator:
         :rtype: None
         """
         r, c = self.world.get_pos_random_edge()
-        ag = agent.Agent(r, c, max_energy, sense)
-        self.agents.append(ag)
-        self.world.add_agent(r, c, ag)
+        agent.pos_x = r
+        agent.pos_y = c
+        self.agents.append(agent)
+        self.world.add_agent(r, c, agent)
 
     def simulate_one_agent_action(self):
         """
@@ -85,7 +86,7 @@ class Simulator:
         """
         for ag in self.agents:
             if ag.food_eat_today == 2:
-                self.create_agent(3, 10)
+                self.add_agent_to_simulation(ag.replicate())
 
     def reset_agents_attributes(self):
         for ag in self.agents:
