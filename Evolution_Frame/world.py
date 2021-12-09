@@ -242,3 +242,10 @@ class World:
         :rtype: None
         """
         self.map[agent.pos_x][agent.pos_y].remove(agent)
+
+    def remove_food(self):
+        for r in range(1, self.dimension_x - 1):
+            for c in range(1, self.dimension_y - 1):
+                for k in range(len(self.map[r][c]) - 1, -1, -1):
+                    if self.map[r][c][k].is_food:
+                        self.map[r][c].pop(k)

@@ -1,6 +1,5 @@
 import object_base
 import action
-import gene
 from random import randint
 
 
@@ -9,7 +8,7 @@ class Agent(object_base.ObjectBase):
     Clase que reprenseta a los agentes de la simulación.
     """
 
-    def __init__(self, pos_x, pos_y, max_energy, sense_gene):
+    def __init__(self, pos_x, pos_y, max_energy, sense_gene, speed_gene):
         """
         Inicializa un agente en la posición (pos_x, pos_y) con una energía máxima (max_energy).
 
@@ -25,10 +24,12 @@ class Agent(object_base.ObjectBase):
         object_base.ObjectBase.__init__(self, pos_x, pos_y)
         self.perception_pos_x = -1
         self.perception_pos_y = -1
-        self.sense_gene = sense_gene
         self.food_eat_today = 0
         self.max_energy = max_energy
         self.current_energy = max_energy
+        self.sense_gene = sense_gene
+        self.speed_gene = speed_gene
+        self.energy_lost_fun = lambda sense, speed: sense + speed
 
     def __str__(self):
         return "Agent"
@@ -41,9 +42,9 @@ class Agent(object_base.ObjectBase):
         :rtype: bool
         :return: self.current_energy >= self.sense_gene.value
         """
-
-        if self.current_energy >= self.sense_gene.value:
-            self.current_energy = self.current_energy - self.sense_gene.value
+        elf = self.energy_lost_fun(self.sense_gene.value, self.speed_gene.value)
+        if self.current_energy >= elf:
+            self.current_energy = self.current_energy - elf
             return True
         return False
 
@@ -55,7 +56,9 @@ class Agent(object_base.ObjectBase):
         :rtype: Agent
         :return: Agent(...)
         """
-        return Agent(-1, -1, self.max_energy, self.sense_gene.mutate())
+        return Agent(
+            -1, -1, self.max_energy, self.sense_gene.mutate(), self.speed_gene.mutate()
+        )
 
     def get_random_move(self, perception):
         """
@@ -218,20 +221,23 @@ class Agent(object_base.ObjectBase):
 
     def play(self, perception):
         """
-        Devuelve la acción que se debe realizar para conseguir algún objetivo.
+        Devuelve las acciones que se deben realizar para conseguir algún objetivo.
 
         :param perception: parte del mundo que es percibida por el agente
         :type perception: World
 
         :rtype: Action
         """
-        if self.current_energy == 0:
-            return action.DoNothing()
+        if self.current_energy < self.energy_lost_fun(
+            self.sense_gene.value, self.speed_gene.value
+        ):
+            return [action.DoNothing()]
         if self.food_eat_today == 0 or (
             self.food_eat_today == 1 and self.current_energy >= self.max_energy // 2
         ):
-            return self.look_for_food(perception)[0]
-        return self.go_to_edge(perception)[0]
+            l = self.look_for_food(perception)[: self.speed_gene.value]
+            return l
+        return self.go_to_edge(perception)[: self.speed_gene.value]
 
     def see(self, world):
         """
