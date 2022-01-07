@@ -1,6 +1,6 @@
-import world
-import agent
-from action import DoNothing
+from . import world
+from . import agent
+from .action import DoNothing
 
 
 class Simulator:

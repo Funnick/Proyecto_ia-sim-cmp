@@ -1,6 +1,6 @@
-import object_base
-import action
-import gene
+from . import object_base
+from . import action
+from . import gene
 from random import randint
 
 

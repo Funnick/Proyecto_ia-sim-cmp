@@ -1,6 +1,7 @@
 import evolution
 import agent
 import object_base
+import gene
 
 s = evolution.Simulator()
 """
@@ -13,11 +14,13 @@ s.simulate_one_agent_action()
 print(s.world)
 """
 s.create_world(7, 10)
-s.create_agent(3, 10)
+ag = agent.Agent(-1, - 1, 100, gene.Gene(5, 0.5, 0.5))
+s.add_agent_to_simulation(ag)
 
 s.world.add_food(10)
 print(s.world)
 print()
 
-s.simulate_one_round()
-print(s.world)
+for i in range(10):
+    s.simulate_one_round()
+    print(s.world)

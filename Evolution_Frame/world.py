@@ -1,4 +1,4 @@
-import object_base
+from . import object_base
 from random import randint, random
 
 

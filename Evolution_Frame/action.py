@@ -14,8 +14,7 @@ class Action:
 
         :rtype: None
         """
-        pass
-
+        agent.current_energy -= 1
 
 class DoNothing(Action):
     """
