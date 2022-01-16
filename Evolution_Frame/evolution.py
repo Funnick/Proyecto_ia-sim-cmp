@@ -1,6 +1,7 @@
 import world
 import agent
 from action import DoNothing
+from random import shuffle
 
 
 class Simulator:
@@ -32,7 +33,7 @@ class Simulator:
         """
         self.world = world.World(dimension_x, dimension_y)
 
-    def create_agent(self, max_energy, sense):
+    def add_agent_to_simulation(self, agent):
         """
         Añade un nuevo agente a la simulación.
 
@@ -42,9 +43,10 @@ class Simulator:
         :rtype: None
         """
         r, c = self.world.get_pos_random_edge()
-        ag = agent.Agent(r, c, max_energy, sense)
-        self.agents.append(ag)
-        self.world.add_agent(r, c, ag)
+        agent.pos_x = r
+        agent.pos_y = c
+        self.agents.append(agent)
+        self.world.add_agent(r, c, agent)
 
     def simulate_one_agent_action(self):
         """
@@ -52,15 +54,14 @@ class Simulator:
 
         :rtype: None
         """
-        actions = []
-        for ag in self.agents:
-            actions.append(ag.play(ag.see(self.world)))
 
         all_do_nothing_actions = True
-        for i in range(len(actions)):
-            if not (actions[i].__class__ is DoNothing):
-                actions[i].execute(self.world, self.agents[i])
-                all_do_nothing_actions = False
+        shuffle(self.agents)
+        for ag in self.agents:
+            for act in ag.play(ag.see(self.world)):
+                if not (act.__class__ is DoNothing):
+                    act.execute(self.world, ag)
+                    all_do_nothing_actions = False
 
         return all_do_nothing_actions
 
@@ -70,12 +71,14 @@ class Simulator:
 
         :rtype: None
         """
-        for ag in self.agents:
+        for i in range(len(self.agents) - 1, -1, -1):
             if not (
-                self.world.cell_is_edge(ag.pos_x, ag.pos_y) and ag.food_eat_today >= 1
+                self.world.cell_is_edge(self.agents[i].pos_x, self.agents[i].pos_y)
+                and self.agents[i].food_eat_today >= 1
+                and self.agents[i].is_alive
             ):
-                self.world.remove_agent(ag)
-                self.agents.remove(ag)
+                self.world.remove_agent(self.agents[i])
+                self.agents.pop(i)
 
     def replicate_agents(self):
         """
@@ -85,12 +88,15 @@ class Simulator:
         """
         for ag in self.agents:
             if ag.food_eat_today == 2:
-                self.create_agent(3, 10)
+                self.add_agent_to_simulation(ag.replicate())
 
     def reset_agents_attributes(self):
         for ag in self.agents:
             ag.food_eat_today = 0
             ag.current_energy = ag.max_energy
+
+    def remove_food(self):
+        self.world.remove_food()
 
     def simulate_one_round(self):
         """
@@ -108,6 +114,8 @@ class Simulator:
         self.replicate_agents()
 
         self.reset_agents_attributes()
+
+        self.remove_food()
 
     def get_simulation_day(self):
         """

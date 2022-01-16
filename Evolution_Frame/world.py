@@ -148,7 +148,7 @@ class World:
             and pos_y < self.dimension_y
         )
 
-    def cell_have_food(self, pos_x, pos_y):
+    def cell_have_food(self, pos_x, pos_y, agent):
         """
         Determina si existe comida en la casilla (pos_x, pos_y)
 
@@ -161,7 +161,12 @@ class World:
         :return: True || False
         """
         for c in self.map[pos_x][pos_y]:
-            if c.is_food:
+            if c.is_food or (
+                c.__class__ == agent.__class__
+                and hasattr(c, "size_gene")
+                and agent.size_gene.value - 2 >= c.size_gene.value
+                and c.is_alive
+            ):
                 return True
         return False
 
@@ -181,7 +186,7 @@ class World:
         self.map[new_pos_x][new_pos_y].append(agent)
         self.map[agent.pos_x][agent.pos_y].remove(agent)
 
-    def agent_eat_food(self, food_pos_x, food_pos_y):
+    def agent_eat_food(self, food_pos_x, food_pos_y, agent):
         """
         Comprueba si existe comida en la casilla (food_pos_x, food_pos_y), de existir
         la remueve y devuelve verdadero, devuelve falso en otro caso.
@@ -197,8 +202,16 @@ class World:
         for c in self.map[food_pos_x][food_pos_y]:
             if c.is_food:
                 self.map[food_pos_x][food_pos_y].remove(c)
-                return True
-        return False
+                return True, None
+            if (
+                c.__class__ == agent.__class__
+                and hasattr(c, "size_gene")
+                and agent.size_gene.value - 2 >= c.size_gene.value
+                and c.is_alive
+            ):
+                return True, c
+
+        return False, None
 
     def get_pos_random_edge(self):
         """
@@ -242,3 +255,10 @@ class World:
         :rtype: None
         """
         self.map[agent.pos_x][agent.pos_y].remove(agent)
+
+    def remove_food(self):
+        for r in range(1, self.dimension_x - 1):
+            for c in range(1, self.dimension_y - 1):
+                for k in range(len(self.map[r][c]) - 1, -1, -1):
+                    if self.map[r][c][k].is_food:
+                        self.map[r][c].pop(k)
