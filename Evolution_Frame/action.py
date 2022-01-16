@@ -76,8 +76,11 @@ class Eat(Action):
     """
 
     def aux_execute(self, world, agent):
-        if world.agent_eat_food(agent.pos_x, agent.pos_y):
+        agent_eat, agent_f = world.agent_eat_food(agent.pos_x, agent.pos_y, agent)
+        if agent_eat:
             agent.food_eat_today = agent.food_eat_today + 1
+            if agent_f != None:
+                agent_f.is_alive = False
 
     def __str__(self):
         return "ActionEat"

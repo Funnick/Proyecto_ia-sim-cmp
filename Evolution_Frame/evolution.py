@@ -1,6 +1,7 @@
 import world
 import agent
 from action import DoNothing
+from random import shuffle
 
 
 class Simulator:
@@ -53,15 +54,13 @@ class Simulator:
 
         :rtype: None
         """
-        actions = []
-        for ag in self.agents:
-            actions.append(ag.play(ag.see(self.world)))
 
         all_do_nothing_actions = True
-        for i in range(len(actions)):
-            for j in range(len(actions[i])):
-                if not (actions[i][j].__class__ is DoNothing):
-                    actions[i][j].execute(self.world, self.agents[i])
+        shuffle(self.agents)
+        for ag in self.agents:
+            for act in ag.play(ag.see(self.world)):
+                if not (act.__class__ is DoNothing):
+                    act.execute(self.world, ag)
                     all_do_nothing_actions = False
 
         return all_do_nothing_actions
@@ -76,6 +75,7 @@ class Simulator:
             if not (
                 self.world.cell_is_edge(self.agents[i].pos_x, self.agents[i].pos_y)
                 and self.agents[i].food_eat_today >= 1
+                and self.agents[i].is_alive
             ):
                 self.world.remove_agent(self.agents[i])
                 self.agents.pop(i)
