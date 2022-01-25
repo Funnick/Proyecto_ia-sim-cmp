@@ -21,6 +21,7 @@ class ObjectBase:
         self.pos_y = pos_y
         self.is_edge = False
         self.is_food = False
+        self.height = 0
 
     def __str__(self):
         return "Nothing"

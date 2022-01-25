@@ -154,9 +154,18 @@ class Simulator:
         m = ""
         for i in range(world.dimension_x):
             for j in range(world.dimension_y):
-                m += self.world_dict[world.map[i][j][-1]]
+                m += self.world_dict[str(world.map[i][j][-1])]
             m += "\n"
-        return m
+        print(m) 
+        
+    def print_altitude(self,world):
+        m = ""
+        for i in range(world.dimension_x):
+            for j in range(world.dimension_y):
+                val = world.map[i][j][0].height
+                m += str(val) + "  " if val >= 0 else str(val) + " "
+            m += "\n"
+        print(m) 
 
     world_dict ={
         "Food":"f",
