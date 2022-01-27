@@ -17,10 +17,13 @@ class Simulator:
         :rtype: Simulator
         """
         self.world = None
+        self.restrictions = None
         self.agents = []
         self.day = 0
 
-    def create_world(self, dimension_x, dimension_y):
+    
+    
+    def create_world(self, dimension_x, dimension_y, trees = 0):
         """
         Inicializa el mundo de la simulación con tamaño dimension_x * dimension_y.
 
@@ -31,8 +34,19 @@ class Simulator:
 
         :rtype: None
         """
-        self.world = world.World(dimension_x, dimension_y)
+        self.world = world.World(dimension_x, dimension_y, trees)
 
+    def add_restrictions(self, func):
+        """
+        Agrega restricciones a la simulación.
+        
+        :param func: función que revisa las restricciones
+        :type func: function
+        
+        :rtype: None
+        """
+        self.restrictions = func
+    
     def add_agent_to_simulation(self, agent):
         """
         Añade un nuevo agente a la simulación.
@@ -95,9 +109,10 @@ class Simulator:
             ag.food_eat_today = 0
             ag.current_energy = ag.max_energy
 
-    def remove_food(self):
+    def clean_map(self):
         self.world.remove_food()
-
+        self.world.remove_tree()
+        
     def simulate_one_round(self):
         """
         Corre un día completo de la simulación.
@@ -115,7 +130,7 @@ class Simulator:
 
         self.reset_agents_attributes()
 
-        self.remove_food()
+        self.clean_map()
 
     def get_simulation_day(self):
         """

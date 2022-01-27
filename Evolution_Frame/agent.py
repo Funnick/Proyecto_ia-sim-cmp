@@ -1,14 +1,14 @@
 import object_base
+import gene
 import action
 from random import randint
-
-
+from math import sqrt
 class Agent(object_base.ObjectBase):
     """
     Clase que reprenseta a los agentes de la simulación.
     """
 
-    def __init__(self, pos_x, pos_y, max_energy, sense_gene, speed_gene, size_gene):
+    def __init__(self, pos_x, pos_y, max_energy = 100):
         """
         Inicializa un agente en la posición (pos_x, pos_y) con una energía máxima (max_energy).
 
@@ -28,14 +28,80 @@ class Agent(object_base.ObjectBase):
         self.food_eat_today = 0
         self.max_energy = max_energy
         self.current_energy = max_energy
-        self.sense_gene = sense_gene
-        self.speed_gene = speed_gene
-        self.size_gene = size_gene
-        self.energy_lost_fun = lambda sense, speed, size: sense + speed + size
+        self.sex = 0
+        self.age = 0
+        
+        self.genetic_code = {
+            'sense': gene.Gene(5, 0.5, 0.5),
+            'speed': gene.Gene(5, 0.5, 0.5),
+            'size': gene.Gene(5, 0.5, 0.5)
+        }
+        self.energy_lost_fun = lambda sense, speed, size: (
+            self.genetic_code['sense'].value + 
+            self.genetic_code['speed'].value + 
+            self.genetic_code['size'].value)
 
     def __str__(self):
         return "Agent"
 
+    def set_random_genetic(self):
+        for gene in range(randint(3)):
+            self.genetic_code
+        
+    def sexual_reproduction(self, other_agent: Agent):
+        son_code = {}
+        son_max_energy = (self.max_energy + other_agent.max_energy)/2
+        for g in self.genetic_code.keys():
+            son_code[g] = ((self.genetic_code[g] + 
+                           other_agent.genetic_code[g])/2)
+        son_agent = Agent(-1, -1, son_max_energy)
+        return son_agent
+    
+    def get_older(self):
+        """
+        Envejece al agente en un punto.\n
+        Retorna la edad del agente.
+        
+        :rtype: int
+        
+        """
+        self.age += 1
+        return self.age
+    
+    def add_gene(self, gene):
+        """
+        Agrega un gen al agente.
+        :param gene: gen que se va a agregar
+
+        :rtype: None
+        """
+        self.genetic_code[str(gene)] = gene
+    
+    def have_gene(self, gene):
+        """
+        Comprueba si el agente posee un gen.
+        :param gene: gen a comprobar si el agente lo posee
+
+        :rtype: bool
+        ::return: True || False
+        """
+        if gene in self.genetic_code.keys():
+            return True
+        else:
+            return False
+    
+    def mutate(self):
+        """
+        Hace mutar todos los genes que posee el agente.
+
+        :rtype: dictionary
+        :return: child_genetic_code
+        """
+        child_genetic_code = {}
+        for gene in self.genetic_code.keys():
+            child_genetic_code[gene] = self.genetic_code[gene].mutate()
+        return child_genetic_code
+    
     def reduce_energy_to_perform_an_action(self):
         """
         Devuelve verdadero en caso de que se pueda consumir energía
@@ -45,29 +111,24 @@ class Agent(object_base.ObjectBase):
         :return: self.current_energy >= self.sense_gene.value
         """
         elf = self.energy_lost_fun(
-            self.sense_gene.value, self.speed_gene.value, self.size_gene.value
+            self.genetic_code['sense'].value, self.genetic_code['speed'].value, self.genetic_code['size'].value
         )
         if self.current_energy >= elf:
             self.current_energy = self.current_energy - elf
             return True
         return False
 
-    def replicate(self):
+    def asexual_reproduction(self):
         """
         Devuelve un nuevo agente que puede tener características mutadas,
         es el resultado de una reproducción asexual.
 
         :rtype: Agent
-        :return: Agent(...)
+        :return: agent
         """
-        return Agent(
-            -1,
-            -1,
-            self.max_energy,
-            self.sense_gene.mutate(),
-            self.speed_gene.mutate(),
-            self.size_gene.mutate(),
-        )
+        agent = Agent(-1, -1, self.max_energy)
+        agent.genetic_code = self.mutate()
+        return agent
 
     def get_random_move(self, perception):
         """
@@ -240,15 +301,17 @@ class Agent(object_base.ObjectBase):
         if not self.is_alive:
             return []
         if self.current_energy < self.energy_lost_fun(
-            self.sense_gene.value, self.speed_gene.value, self.size_gene.value
+            self.genetic_code['sense'].value, 
+            self.genetic_code['speed'].value, 
+            self.genetic_code['size'].value
         ):
             return [action.DoNothing()]
         if self.food_eat_today == 0 or (
             self.food_eat_today == 1 and self.current_energy >= self.max_energy // 2
         ):
-            l = self.look_for_food(perception)[: self.speed_gene.value]
+            l = self.look_for_food(perception)[: self.genetic_code['speed'].value]
             return l
-        return self.go_to_edge(perception)[: self.speed_gene.value]
+        return self.go_to_edge(perception)[: self.genetic_code['speed'].value]
 
     def see(self, world):
         """
@@ -282,13 +345,22 @@ class Agent(object_base.ObjectBase):
             right_corner_y - left_corner_y + 1,
         )
         """
-        left_corner_x = max(0, self.pos_x - self.sense_gene.value)
-        left_corner_y = max(0, self.pos_y - self.sense_gene.value)
-        right_corner_x = min(self.pos_x + self.sense_gene.value, world.dimension_x - 1)
-        right_corner_y = min(self.pos_y + self.sense_gene.value, world.dimension_y - 1)
+        """
+        cells_can_see = []
+        for r in range(1, world.dimension_x - 1):
+            for c in range(1, world.dimension_y - 1):
+                distance = sqrt(pow(r - self.pos_x, 2) + pow(c - self.pos_y, 2))
+                if (distance <= self.genetic_code['sense'].value):
+                    cells_can_see.append(world.map[r][c])
+        return cells_can_see
+        """
+        left_corner_x = max(0, self.pos_x - self.genetic_code['sense'].value)
+        left_corner_y = max(0, self.pos_y - self.genetic_code['sense'].value)
+        right_corner_x = min(self.pos_x + self.genetic_code['sense'].value, world.dimension_x - 1)
+        right_corner_y = min(self.pos_y + self.genetic_code['sense'].value, world.dimension_y - 1)
 
-        self.perception_pos_x = min(self.pos_x, self.sense_gene.value)
-        self.perception_pos_y = min(self.pos_y, self.sense_gene.value)
+        self.perception_pos_x = min(self.pos_x, self.genetic_code['sense'].value)
+        self.perception_pos_y = min(self.pos_y, self.genetic_code['sense'].value)
 
         return world.get_a_peek(
             left_corner_x,
@@ -298,3 +370,5 @@ class Agent(object_base.ObjectBase):
             right_corner_x - left_corner_x + 1,
             right_corner_y - left_corner_y + 1,
         )
+    
+

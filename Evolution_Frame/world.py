@@ -8,7 +8,7 @@ class World:
     contiene un mapa con los agentes y comida.\n
     """
 
-    def __init__(self, dimension_x, dimension_y):
+    def __init__(self, dimension_x, dimension_y, trees = 0):
         """
         Crea un nuevo mundo de tamaño dimension_x * dimension_y, también se
         añaden los bordes.
@@ -26,24 +26,10 @@ class World:
             [[object_base.ObjectBase(i, j)] for i in range(dimension_y)]
             for j in range(dimension_x)
         ]
-        self.add_edges()
-
-    def add_edges(self):
-        """
-        Añade los bordes al mundo. Esta función es llamada en el constructor.
-
-        :rtype: None
-        """
-        for i in range(self.dimension_y):
-            self.map[0][i][0] = object_base.Edge(0, i)
-            self.map[self.dimension_x - 1][i][0] = object_base.Edge(
-                self.dimension_x - 1, i
-            )
-        for i in range(1, self.dimension_x - 1):
-            self.map[i][0][0] = object_base.Edge(i, 0)
-            self.map[i][self.dimension_y - 1][0] = object_base.Edge(
-                i, self.dimension_y - 1
-            )
+        self.init_map(dimension_x, dimension_y)
+        
+        self.trees = []
+        self.add_tree(trees)
 
     def __str__(self):
         m = ""
@@ -53,19 +39,113 @@ class World:
             m += "\n"
         return m
 
+    def init_map(self, dimension_x, dimension_y):
+        """
+        Crea un mapa inicial, con suelo en todo el terreno y\n
+        añade bordes. Esta función es llamada en el constructor.
+        :param dimension_x: largo del mundo
+        :type: int
+        :param dimension_y: ancho del mundo
+        :type: int
+        
+        :rtype: None
+        """
+        for i in range(dimension_x):
+            for j in range(dimension_y):
+                if i == 0 or i == dimension_x - 1:
+                    self.map[i][j].append(object_base.Edge(i, j))
+                elif j == 0 or j == dimension_y - 1:
+                    self.map[i][j].append(object_base.Edge(i, j))
+                else: self.map[i][j].append(object_base.Soil(i, j))
+
+    def add_soil(self, pos_x, pos_y, amount = 1):
+        """
+        Añade más nivel de suelo al mundo.
+        :param pos_x: x de la coordenada para colocar más suelo en el mundo.
+        :type pos_x: int
+        :param pos_y: y de la coordenada para colocar más suelo en el mundo.
+        
+        :rtype: None
+        """
+        self.map[pos_x][pos_y][1].level_up(amount)
+        
+    def del_soil(self, pos_x, pos_y, amount = 1):
+        """
+        Elimina nivel de suelo al mundo.
+        :param pos_x: x de la coordenada para retirar suelo del mundo.
+        :type pos_x: int
+        :param pos_y: y de la coordenada para retirar más suelo del mundo.
+        
+        :rtype: None
+        """
+        self.map[pos_x][pos_y][1].level_down(amount)
+    
+    def add_tree(self, count):
+        """
+        Añade árboles al mundo. No añade árboles en los bordes.
+
+        :param count: cantidad de árboles que se quiere añadir
+        :type count: int
+
+        :rtype: None
+        """
+        while count > 0:
+            u = randint(0, self.dimension_x * self.dimension_y - 1)
+            pos_x, pos_y = u // self.dimension_y, u % self.dimension_y
+            if not self.cell_is_edge(pos_x, pos_y) and not self.cell_have_tree(pos_x, pos_y):
+                max_life = randint(1, 10)
+                tree = object_base.Tree(pos_x, pos_y, max_life)
+                self.trees.append(tree)
+                self.map[pos_x][pos_y].append(tree)
+                count = count - 1
+    
+    def add_trees_food(self, max_food):
+        """
+        Añada comida al mundo desde los árboles. No añade árboles\n
+        en los bordes.
+
+        :param max_food: cantidad de comida máxima que se quiere añadir por cada árbol
+        :type max_food: int
+
+        :rtype: int
+        """
+        used = 0
+        for tree in self.trees:
+            tree.get_older()
+            food_amount = randint(0, max_food)
+            while food_amount > 0:
+                pos_x, pos_y = tree.pos_x + randint(-1, 1), tree.pos_y + randint(-1, 1)
+                if (
+                    not self.cell_is_edge(pos_x, pos_y)
+                    and not self.cell_have_tree(pos_x, pos_y)
+                    ):
+                    self.map[pos_x][pos_y].append(object_base.Food(pos_x, pos_y))
+                    food_amount = food_amount - 1
+                    used = used + 1
+        return used
+        
+    
     def add_food(self, food_amount):
         """
-        Añade comida al mundo. No añade comida en los bordes.
+        Añade comida al mundo. No añade comida en los bordes.\n
+        Algunas comidas aparecerán aleatoriamente por el mundo,\n
+        otras se concentrarán alrededor de los árboles.
 
         :param food_amount: cantidad de comida que se quiere añadir
         :type food_amount: int
 
         :rtype: None
         """
+        if len(self.trees):
+            max_food = randint(0, int(food_amount/len(self.trees)))
+            food_amount = food_amount - self.add_trees_food(max_food)
         while food_amount > 0:
             u = randint(0, self.dimension_x * self.dimension_y - 1)
             pos_x, pos_y = u // self.dimension_y, u % self.dimension_y
-            if not self.map[pos_x][pos_y][0].is_edge:
+            if (
+                not self.cell_is_edge(pos_x, pos_y)
+                and not self.cell_have_tree(pos_x, pos_y)
+                ):
                 self.map[pos_x][pos_y].append(object_base.Food(pos_x, pos_y))
                 food_amount = food_amount - 1
 
@@ -81,7 +161,7 @@ class World:
         """
         Devuelve un nuevo mundo, de tamaño dimension_x * dimension_y,
         que es una copia de un lugar del mundo original. La parte que
-        es copiada es el cuadrado que tiene esquina superior izqueda
+        es copiada es el cuadrado que tiene esquina superior izquierda
         (left_corner_x y left_corner_y) y esquina inferior derecha
         (right_corner_x y right_corner_y).
 
@@ -125,7 +205,7 @@ class World:
         :return: True || False
         """
         for c in self.map[pos_x][pos_y]:
-            if c.is_edge:
+            if isinstance(c, object_base.Edge):
                 return True
         return False
 
@@ -170,6 +250,23 @@ class World:
                 return True
         return False
 
+    def cell_have_tree(self, pos_x, pos_y):
+        """
+        Determina si existe un árbol en la casilla (pos_x, pos_y)
+
+        :param pos_x: coordenada x de la casilla
+        :type pos_x: int
+        :param pos_y: coordenada y de la casilla
+        :type pos_y: int
+
+        :rtype: bool
+        :return: True || False
+        """
+        for c in self.map[pos_x][pos_y]:
+            if c.is_tree:
+                return True
+        return False
+    
     def move_agent(self, agent, new_pos_x, new_pos_y):
         """
         Reubica un agente en el mapa a la casilla (new_pos_x, new_pos_y)
@@ -205,8 +302,8 @@ class World:
                 return True, None
             if (
                 c.__class__ == agent.__class__
-                and hasattr(c, "size_gene")
-                and agent.size_gene.value - 2 >= c.size_gene.value
+                #and hasattr(c, "size_gene")
+                and agent.genetic_code['size'].value - 2 >= c.genetic_code['size'].value
                 and c.is_alive
             ):
                 return True, c
@@ -256,6 +353,16 @@ class World:
         """
         self.map[agent.pos_x][agent.pos_y].remove(agent)
 
+    def remove_tree(self):        
+        for r in range(1, self.dimension_x - 1):
+            for c in range(1, self.dimension_y - 1):
+                for k in range(len(self.map[r][c]) - 1, -1, -1):
+                    if (
+                        self.map[r][c][k].is_tree and 
+                        self.map[r][c][k].max_life == self.map[r][c][k].age
+                        ):
+                        self.map[r][c].pop(k)
+    
     def remove_food(self):
         for r in range(1, self.dimension_x - 1):
             for c in range(1, self.dimension_y - 1):

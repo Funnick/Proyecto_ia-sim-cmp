@@ -21,6 +21,9 @@ class ObjectBase:
         self.pos_y = pos_y
         self.is_edge = False
         self.is_food = False
+        self.is_tree = False
+        self.is_soil = False
+        self.can_pass = True
 
     def __str__(self):
         return "Nothing"
@@ -51,3 +54,39 @@ class Food(ObjectBase):
 
     def __str__(self):
         return "Food"
+
+
+class Tree(ObjectBase):
+    """
+    Clase que representa los árboles del mundo.
+    """
+    def __init__(self, pos_x, pos_y, max_life):
+        ObjectBase.__init__(self, pos_x, pos_y)
+        self.is_tree = True
+        self.max_life = max_life
+        self.age = 0
+
+    def __str__(self):
+        return "Tree"
+    
+    def get_older(self):
+        self.age += 1
+        
+        
+class Soil(ObjectBase):
+    """
+    Clase que representa el suelo del mundo.
+    """
+    def __init__(self, pos_x, pos_y, level = 0):
+        ObjectBase.__init__(self, pos_x, pos_y)
+        self.is_soil = True
+        self.level = level
+
+    def __str__(self):
+        return "Soil"
+    
+    def level_up(self, amount):
+        self.level += amount
+        
+    def level_down(self, amount):
+        self.level -= amount
