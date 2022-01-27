@@ -24,6 +24,7 @@ class ObjectBase:
         self.is_tree = False
         self.is_soil = False
         self.can_pass = True
+        self.smell = []
         self.height = 0
 
     def __str__(self):
@@ -72,22 +73,3 @@ class Tree(ObjectBase):
     
     def get_older(self):
         self.age += 1
-        
-        
-class Soil(ObjectBase):
-    """
-    Clase que representa el suelo del mundo.
-    """
-    def __init__(self, pos_x, pos_y, level = 0):
-        ObjectBase.__init__(self, pos_x, pos_y)
-        self.is_soil = True
-        self.level = level
-
-    def __str__(self):
-        return "Soil"
-    
-    def level_up(self, amount):
-        self.level += amount
-        
-    def level_down(self, amount):
-        self.level -= amount

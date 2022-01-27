@@ -48,7 +48,7 @@ class Agent(object_base.ObjectBase):
         for gene in range(randint(3)):
             self.genetic_code
         
-    def sexual_reproduction(self, other_agent: Agent):
+    def sexual_reproduction(self, other_agent):
         son_code = {}
         son_max_energy = (self.max_energy + other_agent.max_energy)/2
         for g in self.genetic_code.keys():

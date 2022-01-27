@@ -182,8 +182,9 @@ class Simulator:
         print(m) 
 
     world_dict ={
-        "Food":"f",
-        "Edge":".",
-        "Agent":"a",
-        "Nothing":" "
+        "Food":"o",
+        "Edge":"#",
+        "Agent":"A",
+        "Nothing":" ",
+        "Tree": "T"
         }

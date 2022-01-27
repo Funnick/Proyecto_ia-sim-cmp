@@ -1,4 +1,5 @@
 import numpy as np
+from math import gcd
 
 def generate_perlin_noise_2d(shape, res):
     def f(t):
@@ -27,6 +28,7 @@ def generate_perlin_noise_2d(shape, res):
 
 
 def generate_elevation_matrix(dimension_x,dimension_y):
+    mcd = gcd(dimension_x, dimension_y)
     a = generate_perlin_noise_2d((dimension_x,dimension_y),(2,2))
     elevation=[]
     for i in range(dimension_y):

@@ -26,7 +26,7 @@ class Gene:
         self.chance_to_mutate = chance_to_mutate
         self.chance_to_go_up = chance_to_go_up
 
-    def __add__(self, o:Gene):
+    def __add__(self, o):
         return (self.value + o.value)/2
 
     def mutate(self):
@@ -91,7 +91,7 @@ class Reproduction(Gene):
     def __str__(self):
         return 'reproduction'
     
-    def __add__(self, o: Gene):
+    def __add__(self, o):
         return self.value
     
     def mutate(self):
@@ -134,7 +134,7 @@ class GeneticCode:
             str(self.life): self.life,
         }
         
-    def __add__(self, o: GeneticCode):
+    def __add__(self, o):
         new_chain = {}
         for gene in self.chain.keys():
             new_chain[g] = ((self.chain[g] + o.chain[g])/2)

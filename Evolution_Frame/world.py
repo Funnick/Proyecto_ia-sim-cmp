@@ -23,20 +23,9 @@ class World:
         """
         self.dimension_x = dimension_x
         self.dimension_y = dimension_y
-        self.map = [
-            [[object_base.ObjectBase(i, j)] for i in range(dimension_y)]
-            for j in range(dimension_x)
-        ]
-        self.init_map(dimension_x, dimension_y)
-        """
-        elevation = perlin.generate_elevation_matrix(dimension_x,dimension_y)
         self.map = []
-        for i in range(dimension_y):
-            self.map.append([])
-            for j in range(dimension_y):
-                self.map[i].append([object_base.ObjectBase(i,j)])
-                self.map[i][j][0].height = elevation[i][j] 
-        """
+        elevation = perlin.generate_elevation_matrix(dimension_x,dimension_y)
+        self.init_map(dimension_x, dimension_y, elevation)
         self.trees = []
         self.add_tree(trees)
 
@@ -48,7 +37,7 @@ class World:
             m += "\n"
         return m
 
-    def init_map(self, dimension_x, dimension_y):
+    def init_map(self, dimension_x, dimension_y, elevation):
         """
         Crea un mapa inicial, con suelo en todo el terreno y\n
         añade bordes. Esta función es llamada en el constructor.
@@ -60,12 +49,17 @@ class World:
         :rtype: None
         """
         for i in range(dimension_x):
+            self.map.append([])
             for j in range(dimension_y):
+                self.map[i].append([])
                 if i == 0 or i == dimension_x - 1:
                     self.map[i][j].append(object_base.Edge(i, j))
                 elif j == 0 or j == dimension_y - 1:
                     self.map[i][j].append(object_base.Edge(i, j))
-                else: self.map[i][j].append(object_base.Soil(i, j))
+                else: 
+                    base = object_base.ObjectBase(i, j)
+                    base.height = elevation[i][j]
+                    self.map[i][j].append(base)
 
     def add_soil(self, pos_x, pos_y, amount = 1):
         """
@@ -121,7 +115,7 @@ class World:
         used = 0
         for tree in self.trees:
             tree.get_older()
-            food_amount = randint(0, max_food)
+            food_amount = max_food
             while food_amount > 0:
                 pos_x, pos_y = tree.pos_x + randint(-1, 1), tree.pos_y + randint(-1, 1)
                 if (
