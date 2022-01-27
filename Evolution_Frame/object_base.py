@@ -24,6 +24,7 @@ class ObjectBase:
         self.is_tree = False
         self.is_soil = False
         self.can_pass = True
+        self.height = 0
 
     def __str__(self):
         return "Nothing"

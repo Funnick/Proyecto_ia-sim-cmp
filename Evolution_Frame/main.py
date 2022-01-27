@@ -36,3 +36,11 @@ for i in range(10):
       s.simulate_one_round()
       print(s.world)
       print('-----------------------------')    
+s.create_world(10, 10)
+
+s.world.add_food(10)
+s.print_world(s.world)
+s.print_altitude(s.world)
+print()
+
+s.simulate_one_round()

@@ -20,6 +20,7 @@ class Simulator:
         self.restrictions = None
         self.agents = []
         self.day = 0
+        self.cycle = 0
 
     
     
@@ -119,17 +120,20 @@ class Simulator:
 
         :rtype: None
         """
-        self.day = self.day + 1
+        self.cycle = self.cycle + 1
 
         while not self.simulate_one_agent_action():
             pass
 
-        self.eliminate_poorly_positioned_hungry_agents()
+        if self.is_day():
+            self.eliminate_poorly_positioned_hungry_agents()
 
-        self.replicate_agents()
+            self.replicate_agents()
 
-        self.reset_agents_attributes()
+            self.reset_agents_attributes()
 
+        else:
+            self.day = self.day + 1
         self.clean_map()
 
     def get_simulation_day(self):
@@ -140,6 +144,12 @@ class Simulator:
         :return: self.day
         """
         return self.day
+    
+    def is_day(self):
+        return self.cycle%2==0
+    
+    def get_day_night(self):
+        return "dia" if self.is_day() else "noche"
 
     def get_number_of_agents(self):
         """
@@ -151,5 +161,29 @@ class Simulator:
         return len(self.agents)
 
     def get_statistics(self):
-        print("Día ->", self.get_simulation_day())
+        print("Día ->", self.get_simulation_day()," "+self.get_day_night)
         print("Número de agentes ->", self.get_number_of_agents())
+        
+    def print_world(self,world):
+        m = ""
+        for i in range(world.dimension_x):
+            for j in range(world.dimension_y):
+                m += self.world_dict[str(world.map[i][j][-1])]
+            m += "\n"
+        print(m) 
+        
+    def print_altitude(self,world):
+        m = ""
+        for i in range(world.dimension_x):
+            for j in range(world.dimension_y):
+                val = world.map[i][j][0].height
+                m += str(val) + "  " if val >= 0 else str(val) + " "
+            m += "\n"
+        print(m) 
+
+    world_dict ={
+        "Food":"f",
+        "Edge":".",
+        "Agent":"a",
+        "Nothing":" "
+        }

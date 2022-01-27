@@ -1,4 +1,5 @@
 import object_base
+import perlin
 from random import randint, random
 
 
@@ -27,7 +28,15 @@ class World:
             for j in range(dimension_x)
         ]
         self.init_map(dimension_x, dimension_y)
-        
+        """
+        elevation = perlin.generate_elevation_matrix(dimension_x,dimension_y)
+        self.map = []
+        for i in range(dimension_y):
+            self.map.append([])
+            for j in range(dimension_y):
+                self.map[i].append([object_base.ObjectBase(i,j)])
+                self.map[i][j][0].height = elevation[i][j] 
+        """
         self.trees = []
         self.add_tree(trees)
 
