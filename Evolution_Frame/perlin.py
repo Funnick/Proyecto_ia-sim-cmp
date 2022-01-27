@@ -25,16 +25,16 @@ def generate_perlin_noise_2d(shape, res):
     n1 = n01*(1-t[:,:,0]) + t[:,:,0]*n11
     return np.sqrt(2)*((1-t[:,:,1])*n0 + t[:,:,1]*n1)
 
-
-def generate_elevation_matrix(dimension_x,dimension_y):
-    a = generate_perlin_noise_2d((dimension_x,dimension_y),(2,2))
+def generate_elevation_matrix(dimension_x,dimension_y,shape_x=2,shape_y=2):
+    a = generate_perlin_noise_2d((dimension_x,dimension_y),(shape_x,shape_y))
     elevation=[]
-    for i in range(dimension_y):
+    for i in range(dimension_x):
         elevation.append([])
-        for j in range(dimension_x):
+        for j in range(dimension_y):
             elevation[i].append(round(a[i][j]*10))
                
-    return elevation       
+    return elevation      
+    
         
     
     
