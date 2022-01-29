@@ -5,9 +5,10 @@ import object_base
 
 s = evolution.Simulator()
 
-s.create_world(8, 10, 5)
+s.create_world(10, 20, 5)
+a = agent.Agent(-1, -1, 200)
+s.add_agent_to_simulation(a)
 """
-s.create_agent(3, 100)
 s.world.add_food(10, 5)
 
 print(s.world)
@@ -39,9 +40,12 @@ for i in range(10):
       print('-----------------------------')    
 s.create_world(10, 10)
 """
-s.world.add_food(50)
+s.world.add_food(10)
 s.print_world(s.world)
 s.print_altitude(s.world)
 print()
 
-s.simulate_one_round()
+for i in range(6):
+      s.simulate_one_round()
+      s.world.add_food(10)
+      s.print_world(s.world)

@@ -38,6 +38,7 @@ class MoveNorth(Action):
     def aux_execute(self, world, agent):
         world.move_agent(agent, agent.pos_x - 1, agent.pos_y)
         agent.pos_x = agent.pos_x - 1
+        agent.set_feromone(world)
 
 
 class MoveSouth(Action):
@@ -48,6 +49,7 @@ class MoveSouth(Action):
     def aux_execute(self, world, agent):
         world.move_agent(agent, agent.pos_x + 1, agent.pos_y)
         agent.pos_x = agent.pos_x + 1
+        agent.set_feromone(world)
 
 
 class MoveEast(Action):
@@ -58,6 +60,7 @@ class MoveEast(Action):
     def aux_execute(self, world, agent):
         world.move_agent(agent, agent.pos_x, agent.pos_y + 1)
         agent.pos_y = agent.pos_y + 1
+        agent.set_feromone(world)
 
 
 class MoveWest(Action):
@@ -68,6 +71,7 @@ class MoveWest(Action):
     def aux_execute(self, world, agent):
         world.move_agent(agent, agent.pos_x, agent.pos_y - 1)
         agent.pos_y = agent.pos_y - 1
+        agent.set_feromone(world)
 
 
 class Eat(Action):

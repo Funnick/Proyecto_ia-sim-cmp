@@ -42,9 +42,10 @@ class Gene:
             elif self.value < self.max_level:
                 return Gene(self.value + 1, self.chance_to_mutate, self.chance_to_go_up)
         return Gene(self.value, self.chance_to_mutate, self.chance_to_go_up)
+    
 class Sense(Gene):
     def __init__(self,
-                 value = 15,
+                 value = 5,
                  chance_to_mutate = 0.5,
                  chance_to_go_up = 0.5):
         Gene.__init__(self, value, chance_to_mutate, chance_to_go_up)
@@ -52,12 +53,12 @@ class Sense(Gene):
     def __str__(self):
         return 'sense'
     
-    def mutate(self):
-        NotImplemented
+    #def mutate(self):
+    #    NotImplemented
     
 class Size(Gene):
     def __init__(self,
-                 value = 15,
+                 value = 5,
                  chance_to_mutate = 0.5,
                  chance_to_go_up = 0.5):
         Gene.__init__(self, value, chance_to_mutate, chance_to_go_up)
@@ -65,12 +66,12 @@ class Size(Gene):
     def __str__(self):
         return 'size'
     
-    def mutate(self):
-        NotImplemented
+    #def mutate(self):
+    #    NotImplemented
     
 class Speed(Gene):
     def __init__(self,
-                 value = 15,
+                 value = 5,
                  chance_to_mutate = 0.5,
                  chance_to_go_up = 0.5):
         Gene.__init__(self, value, chance_to_mutate, chance_to_go_up)
@@ -78,8 +79,8 @@ class Speed(Gene):
     def __str__(self):
         return 'speed'
     
-    def mutate(self):
-        NotImplemented
+    #def mutate(self):
+    #    NotImplemented
     
 class Reproduction(Gene):
     def __init__(self,
@@ -94,12 +95,12 @@ class Reproduction(Gene):
     def __add__(self, o):
         return self.value
     
-    def mutate(self):
-        NotImplemented
+    #def mutate(self):
+    #    NotImplemented
     
 class Life(Gene):
     def __init__(self,
-                 value = 15,
+                 value = 5,
                  chance_to_mutate = 0.5,
                  chance_to_go_up = 0.5):
         Gene.__init__(self, value, chance_to_mutate, chance_to_go_up)
@@ -107,20 +108,34 @@ class Life(Gene):
     def __str__(self):
         return 'life'
     
-    def mutate(self):
-        NotImplemented
+    #def mutate(self):
+    #    NotImplemented
         
+class Sex(Gene):
+    def __init__(self,
+                 value = 5,
+                 chance_to_mutate = 0.5,
+                 chance_to_go_up = 0.5):
+        Gene.__init__(self, value, chance_to_mutate, chance_to_go_up)
+    
+    def __str__(self):
+        return 'life'
+    
+    #def mutate(self):
+    #    NotImplemented
         
 class GeneticCode:
     def __init__(self,
                  sense = Sense(),
                  speed = Speed(),
                  size = Size(),
+                 sex = Sex(),
                  reproduction = Reproduction(),
                  life = Life()):
         self.sense = sense
         self.speed = speed
         self.size = size
+        self.sex = sex
         self.reproduction = reproduction
         self.life = life
         self.build_chain()
@@ -130,6 +145,7 @@ class GeneticCode:
             str(self.sense): self.sense,
             str(self.speed): self.speed,
             str(self.size): self.size,
+            str(self.sex): self.sex,
             str(self.reproduction): self.reproduction,
             str(self.life): self.life,
         }
@@ -137,5 +153,26 @@ class GeneticCode:
     def __add__(self, o):
         new_chain = {}
         for gene in self.chain.keys():
-            new_chain[g] = ((self.chain[g] + o.chain[g])/2)
+            if random() < 0.5:
+                new_chain[g] = self.chain[g]
+            else:
+                new_chain[g] = o.chain[g]
         return new_chain
+    
+    def add_gene(self, gene):
+        self.chain[str(gene)] = gene
+    
+    def code(self):
+        return self.chain
+    
+    def mutate(self):
+        new_chain = GeneticCode()
+        for gene in self.chain.keys():
+            new_chain.chain[gene] = self.chain[gene].mutate()
+        return new_chain
+    
+    def get_gene(self, gene):
+        return self.chain[gene]
+    
+    def have_gene(self, gene):
+        return str(gene) in self.code().keys()

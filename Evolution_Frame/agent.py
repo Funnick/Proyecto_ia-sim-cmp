@@ -3,6 +3,14 @@ import gene
 import action
 from random import randint
 from math import sqrt
+
+directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+directions_actions = [
+    action.MoveNorth(),
+    action.MoveSouth(),
+    action.MoveWest(),
+    action.MoveEast(),  
+]
 class Agent(object_base.ObjectBase):
     """
     Clase que reprenseta a los agentes de la simulación.
@@ -30,16 +38,12 @@ class Agent(object_base.ObjectBase):
         self.current_energy = max_energy
         self.sex = 0
         self.age = 0
-        
-        self.genetic_code = {
-            'sense': gene.Gene(5, 0.5, 0.5),
-            'speed': gene.Gene(5, 0.5, 0.5),
-            'size': gene.Gene(5, 0.5, 0.5)
-        }
+        self.memory = [[],[],[]]
+        self.genetic_code = gene.GeneticCode()
         self.energy_lost_fun = lambda sense, speed, size: (
-            self.genetic_code['sense'].value + 
-            self.genetic_code['speed'].value + 
-            self.genetic_code['size'].value)
+            self.genetic_code.get_gene('sense').value + 
+            self.genetic_code.get_gene('speed').value + 
+            self.genetic_code.get_gene('size').value)
 
     def __str__(self):
         return "Agent"
@@ -49,13 +53,18 @@ class Agent(object_base.ObjectBase):
             self.genetic_code
         
     def sexual_reproduction(self, other_agent):
-        son_code = {}
         son_max_energy = (self.max_energy + other_agent.max_energy)/2
-        for g in self.genetic_code.keys():
-            son_code[g] = ((self.genetic_code[g] + 
-                           other_agent.genetic_code[g])/2)
         son_agent = Agent(-1, -1, son_max_energy)
+        son_agent.genetic_code = self.genetic_code + other_agent.genetic_code
         return son_agent
+    
+    def memory(self, pos, type):
+        if type == 'Tree':
+            self.memory[0].append(pos)
+        elif type == 'Agent':
+            self.memory[1].append(pos)
+        elif type == 'Food':
+            self.memory[2].append(pos)
     
     def get_older(self):
         """
@@ -75,7 +84,7 @@ class Agent(object_base.ObjectBase):
 
         :rtype: None
         """
-        self.genetic_code[str(gene)] = gene
+        self.genetic_code.add_gene(gene)
     
     def have_gene(self, gene):
         """
@@ -85,7 +94,7 @@ class Agent(object_base.ObjectBase):
         :rtype: bool
         ::return: True || False
         """
-        if gene in self.genetic_code.keys():
+        if self.genetic_code.have_gene(gene):
             return True
         else:
             return False
@@ -94,12 +103,10 @@ class Agent(object_base.ObjectBase):
         """
         Hace mutar todos los genes que posee el agente.
 
-        :rtype: dictionary
+        :rtype: GeneticCode
         :return: child_genetic_code
         """
-        child_genetic_code = {}
-        for gene in self.genetic_code.keys():
-            child_genetic_code[gene] = self.genetic_code[gene].mutate()
+        child_genetic_code = self.genetic_code.mutate()
         return child_genetic_code
     
     def reduce_energy_to_perform_an_action(self):
@@ -111,7 +118,9 @@ class Agent(object_base.ObjectBase):
         :return: self.current_energy >= self.sense_gene.value
         """
         elf = self.energy_lost_fun(
-            self.genetic_code['sense'].value, self.genetic_code['speed'].value, self.genetic_code['size'].value
+            self.genetic_code.get_gene('sense').value,
+            self.genetic_code.get_gene('speed').value,
+            self.genetic_code.get_gene('size').value
         )
         if self.current_energy >= elf:
             self.current_energy = self.current_energy - elf
@@ -140,13 +149,9 @@ class Agent(object_base.ObjectBase):
         :rtype: Action
         :return: [moves[randint(0, len(moves) - 1)]]
         """
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        directions_actions = [
-            action.MoveNorth(),
-            action.MoveSouth(),
-            action.MoveWest(),
-            action.MoveEast(),
-        ]
+        global directions
+        global directions_actions
+        
         moves = []
 
         for i in range(4):
@@ -183,6 +188,53 @@ class Agent(object_base.ObjectBase):
 
         return new_plan
 
+
+    def go_to_edge(self, perception):
+        """
+        Devuelve una lista de acciones que se deben realizar para conseguir llegar al borde.
+        En caso de no haber una acción clara en la percepción se devuelve una
+        acción de moverse aleatoria.
+
+        :param perception: parte del mundo que es percibida por el agente
+        :type perception: World
+
+        :rtype: Action list
+        """
+        
+        matrix = [
+            [False for i in range(perception.dimension_y)]
+            for j in range(perception.dimension_x)
+        ]
+        matrix[self.perception_pos_x][self.perception_pos_y] = True
+
+        pi = []
+        plan = []
+        for i in range(perception.dimension_x * perception.dimension_y):
+            pi.append(-1)
+            plan.append(action.DoNothing())
+
+        queue = [(self.perception_pos_x, self.perception_pos_y)]
+        while len(queue) > 0:
+            cell = queue.pop(0)
+            if perception.cell_is_edge(cell[0], cell[1]):
+                return self.make_plan(cell, pi, plan, perception.dimension_y)
+
+            for i in range(4):
+                new_cell = (cell[0] + directions[i][0], cell[1] + directions[i][1])
+
+                if (
+                    perception.valid_cell_to_move(new_cell[0], new_cell[1])
+                    and not matrix[new_cell[0]][new_cell[1]]
+                ):
+                    queue.append(new_cell)
+                    matrix[new_cell[0]][new_cell[1]] = True
+                    pi[new_cell[0] * perception.dimension_y + new_cell[1]] = cell
+                    plan[
+                        new_cell[0] * perception.dimension_y + new_cell[1]
+                    ] = directions_actions[i]
+
+        return self.get_random_move(perception)
+    
     def look_for_food(self, perception):
         """
         Devuelve una lista de acciones que se deben realizar para conseguir comida.
@@ -194,20 +246,15 @@ class Agent(object_base.ObjectBase):
 
         :rtype: Action list
         """
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        directions_actions = [
-            action.MoveNorth(),
-            action.MoveSouth(),
-            action.MoveWest(),
-            action.MoveEast(),
-        ]
-
+        global directions
+        global directions_actions
+        
         matrix = [
             [False for i in range(perception.dimension_y)]
             for j in range(perception.dimension_x)
         ]
         matrix[self.perception_pos_x][self.perception_pos_y] = True
-
+        
         pi = []
         plan = []
         for i in range(perception.dimension_x * perception.dimension_y):
@@ -247,14 +294,7 @@ class Agent(object_base.ObjectBase):
 
         :rtype: Action list
         """
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        directions_actions = [
-            action.MoveNorth(),
-            action.MoveSouth(),
-            action.MoveWest(),
-            action.MoveEast(),
-        ]
-
+        
         matrix = [
             [False for i in range(perception.dimension_y)]
             for j in range(perception.dimension_x)
@@ -301,17 +341,17 @@ class Agent(object_base.ObjectBase):
         if not self.is_alive:
             return []
         if self.current_energy < self.energy_lost_fun(
-            self.genetic_code['sense'].value, 
-            self.genetic_code['speed'].value, 
-            self.genetic_code['size'].value
+            self.genetic_code.get_gene('sense').value, 
+            self.genetic_code.get_gene('speed').value, 
+            self.genetic_code.get_gene('size').value
         ):
             return [action.DoNothing()]
         if self.food_eat_today == 0 or (
             self.food_eat_today == 1 and self.current_energy >= self.max_energy // 2
         ):
-            l = self.look_for_food(perception)[: self.genetic_code['speed'].value]
+            l = self.look_for_food(perception)[: self.genetic_code.get_gene('speed').value]
             return l
-        return self.go_to_edge(perception)[: self.genetic_code['speed'].value]
+        return self.go_to_edge(perception)[: self.genetic_code.get_gene('speed').value]
 
     def see(self, world):
         """
@@ -345,30 +385,28 @@ class Agent(object_base.ObjectBase):
             right_corner_y - left_corner_y + 1,
         )
         """
-        """
-        cells_can_see = []
-        for r in range(1, world.dimension_x - 1):
-            for c in range(1, world.dimension_y - 1):
-                distance = sqrt(pow(r - self.pos_x, 2) + pow(c - self.pos_y, 2))
-                if (distance <= self.genetic_code['sense'].value):
-                    cells_can_see.append(world.map[r][c])
-        return cells_can_see
-        """
-        left_corner_x = max(0, self.pos_x - self.genetic_code['sense'].value)
-        left_corner_y = max(0, self.pos_y - self.genetic_code['sense'].value)
-        right_corner_x = min(self.pos_x + self.genetic_code['sense'].value, world.dimension_x - 1)
-        right_corner_y = min(self.pos_y + self.genetic_code['sense'].value, world.dimension_y - 1)
+        left_corner_x = max(0, self.pos_x - self.genetic_code.get_gene('sense').value)
+        left_corner_y = max(0, self.pos_y - self.genetic_code.get_gene('sense').value)
+        right_corner_x = min(self.pos_x + self.genetic_code.get_gene('sense').value, world.dimension_x - 1)
+        right_corner_y = min(self.pos_y + self.genetic_code.get_gene('sense').value, world.dimension_y - 1)
 
-        self.perception_pos_x = min(self.pos_x, self.genetic_code['sense'].value)
-        self.perception_pos_y = min(self.pos_y, self.genetic_code['sense'].value)
+        self.perception_pos_x = min(self.pos_x, self.genetic_code.get_gene('sense').value)
+        self.perception_pos_y = min(self.pos_y, self.genetic_code.get_gene('sense').value)
 
-        return world.get_a_peek(
-            left_corner_x,
-            left_corner_y,
-            right_corner_x,
-            right_corner_y,
-            right_corner_x - left_corner_x + 1,
-            right_corner_y - left_corner_y + 1,
-        )
+        return world.get_a_peek(left_corner_x,
+                left_corner_y,
+                right_corner_x,
+                right_corner_y,
+                right_corner_x - left_corner_x + 1,
+                right_corner_y - left_corner_y + 1)
+
+    def set_feromone(self, world):
+        world.map[self.pos_x][self.pos_y].add_feromone(Pheromone())
+        
+class Pheromone:
+    def __init__(self, value = 1):
+        self.value = value
+        self.time = 2
     
-
+    def evaporate(self):
+        self.time -= 1

@@ -115,7 +115,7 @@ class World:
         used = 0
         for tree in self.trees:
             tree.get_older()
-            food_amount = max_food
+            food_amount = randint(0, int(max_food/len(self.trees)))
             while food_amount > 0:
                 pos_x, pos_y = tree.pos_x + randint(-1, 1), tree.pos_y + randint(-1, 1)
                 if (
@@ -140,8 +140,7 @@ class World:
         :rtype: None
         """
         if len(self.trees):
-            max_food = randint(0, int(food_amount/len(self.trees)))
-            food_amount = food_amount - self.add_trees_food(max_food)
+            food_amount -= self.add_trees_food(food_amount)
         while food_amount > 0:
             u = randint(0, self.dimension_x * self.dimension_y - 1)
             pos_x, pos_y = u // self.dimension_y, u % self.dimension_y
@@ -246,8 +245,10 @@ class World:
         for c in self.map[pos_x][pos_y]:
             if c.is_food or (
                 c.__class__ == agent.__class__
-                and hasattr(c, "size_gene")
-                and agent.size_gene.value - 2 >= c.size_gene.value
+                #and hasattr(c, "size_gene")
+                and c.genetic_code.have_gene('size')
+                and (agent.genetic_code.get_gene('size').value - 2 >= 
+                     c.genetic_code.get_gene('size').value)
                 and c.is_alive
             ):
                 return True
@@ -306,7 +307,8 @@ class World:
             if (
                 c.__class__ == agent.__class__
                 #and hasattr(c, "size_gene")
-                and agent.genetic_code['size'].value - 2 >= c.genetic_code['size'].value
+                and (agent.genetic_code.get_gene('size').value - 2 >=
+                     c.genetic_code.get_gene('size').value)
                 and c.is_alive
             ):
                 return True, c
@@ -356,7 +358,13 @@ class World:
         """
         self.map[agent.pos_x][agent.pos_y].remove(agent)
 
-    def remove_tree(self):        
+    def remove_tree(self): 
+        """
+        Elimina los árboles que ya hayan envejecido\n
+        demasiado de la simulación.
+        
+        :rtype: None
+        """       
         for r in range(1, self.dimension_x - 1):
             for c in range(1, self.dimension_y - 1):
                 for k in range(len(self.map[r][c]) - 1, -1, -1):
@@ -366,9 +374,35 @@ class World:
                         ):
                         self.map[r][c].pop(k)
     
+    def remove_pheromones(self):
+        """
+        Evapora las feromonas, y si esta llega al\n
+        tiempo máximo de existencia, la elimina
+        
+        :rtype: None
+        """   
+        for r in range(1, self.dimension_x - 1):
+            for c in range(1, self.dimension_y - 1):
+                pheromones = self.map[r][c].pheromones
+                for p in pheromones:
+                    p.evaporate()
+                    if p.time == 0:
+                        pheromones.remove(p)
+    
     def remove_food(self):
+        """
+        Remueve la comida de la simulación, y\n
+        con una probabilidad muy pequeña, la transforma\n
+        en un árbol.
+        
+        :rtype: None
+        """   
         for r in range(1, self.dimension_x - 1):
             for c in range(1, self.dimension_y - 1):
                 for k in range(len(self.map[r][c]) - 1, -1, -1):
                     if self.map[r][c][k].is_food:
-                        self.map[r][c].pop(k)
+                        if not self.cell_have_tree(r, c) and random() < 0.1:
+                            max_life = randint(1, 10)
+                            self.map[r][c][k] = object_base.Tree(r, c, max_life)
+                        else:
+                            self.map[r][c].pop(k)

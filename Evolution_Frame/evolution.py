@@ -103,7 +103,7 @@ class Simulator:
         """
         for ag in self.agents:
             if ag.food_eat_today == 2:
-                self.add_agent_to_simulation(ag.replicate())
+                self.add_agent_to_simulation(ag.asexual_reproduction())
 
     def reset_agents_attributes(self):
         for ag in self.agents:
@@ -113,6 +113,7 @@ class Simulator:
     def clean_map(self):
         self.world.remove_food()
         self.world.remove_tree()
+        self.world.remove_pheromones()
         
     def simulate_one_round(self):
         """
