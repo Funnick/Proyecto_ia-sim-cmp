@@ -46,6 +46,3 @@ def generate_elevation_matrix(dimension_x,dimension_y):
             elevation[i].append(round(a[i][j]*10))
                
     return elevation      
-     
-    
-    

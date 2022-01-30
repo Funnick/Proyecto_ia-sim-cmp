@@ -11,6 +11,9 @@ directions_actions = [
     action.MoveWest(),
     action.MoveEast(),  
 ]
+adjacents = [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]
+ENEMIES, TREES, FOOD = 0,1,2
+
 class Agent(object_base.ObjectBase):
     """
     Clase que reprenseta a los agentes de la simulación.
@@ -235,6 +238,179 @@ class Agent(object_base.ObjectBase):
 
         return self.get_random_move(perception)
     
+    def move(self, limits, start):
+        global adjacents
+        
+        # Create start and end node
+        start_node = Node(None, start)
+        end_node = Node(None, end)
+
+        # Initialize both open and closed list
+        open_list = []
+        closed_list = []
+
+        # Add the start node
+        open_list.append(start_node)
+
+        # Loop until you find the end
+        while len(open_list) > 0:
+
+            # Get the current node
+            current_node = open_list[0]
+            current_index = 0
+            for index, item in enumerate(open_list):
+                if item.f < current_node.f:
+                    current_node = item
+                    current_index = index
+
+            # Pop current off open list, add to closed list
+            open_list.pop(current_index)
+            closed_list.append(current_node)
+
+            # Found the goal
+            if current_node == end_node:
+                path = []
+                current = current_node
+                while current is not None:
+                    path.append(current.position)
+                    current = current.parent
+                return path[::-1] # Return reversed path
+
+            # Generate children
+            children = []
+            for new_position in adjacents: # Adjacent squares
+
+                # Get node position
+                node_position = (current_node.position[0] + new_position[0],
+                                 current_node.position[1] + new_position[1])
+
+                # Make sure within range
+                if (node_position[0] > (len(world) - 1) or
+                    node_position[0] < 0 or
+                    node_position[1] > (len(world[len(world)-1]) -1) or
+                    node_position[1] < 0):
+                    continue
+
+                # Make sure walkable terrain
+                if world[node_position[0]][node_position[1]] != 0:
+                    continue
+
+                # Create new node
+                new_node = Node(current_node, node_position)
+
+                # Append
+                children.append(new_node)
+
+            # Loop through children
+            for child in children:
+                # Child is on the closed list
+                for closed_child in closed_list:
+                    if child == closed_child:
+                        continue
+
+                # Tiempo en que fue visto
+                child.g = current_node.g + 1
+                
+                # Diferencia de elevación
+                d = -1 * abs(world[child.position[0]][child.position[1]].height -
+                                   world[child.parent.position[0]][child.parent.position[1]].height)
+                
+                # Cantidad de feromonas
+                p = len(world[child.position[0]][child.position[1]].pheromones)
+                
+                # Media de las distancias de manhattan con respecto a todas las comidas vistas
+                a = -1 * mean([manhattan([i.pos_x, i.pos_y], [child.position[0], child.position[1]])
+                                for i in self.memory[FOOD]])
+                
+                # Media de las distancias de manhattan con respecto a todos los enemigos vistos
+                e = -1 * mean([manhattan([i.pos_x, i.pos_y], [child.position[0], child.position[1]])
+                                for i in self.memory[ENEMIES]])
+                
+                # Media de las distancias de manhattan con respecto a todos los árboles vistos
+                t = -1 * mean([manhattan([i.pos_x, i.pos_y], [child.position[0], child.position[1]])
+                                for i in self.memory[TREES]])
+                
+                # Función heurística
+                child.h = d + a + e + t + p
+                
+                # Función de costo total
+                child.f = child.g + child.h
+
+                # Child is already in the open list
+                for open_node in open_list:
+                    if child == open_node and child.g > open_node.g:
+                        continue
+
+                # Add the child to the open list
+                open_list.append(child)
+    
+    def look_for_food(self, perception, foods, trees, enemies):
+        """
+        Devuelve una lista de acciones que se deben realizar para conseguir comida.
+        En caso de no haber una acción clara en la percepción se devuelve una
+        acción de moverse aleatoria.
+
+        :param perception: parte del mundo que es percibida por el agente
+        :type perception: World
+
+        :rtype: Action list
+        """
+        global directions
+        global directions_actions
+        plan = []
+
+        queue = [(self.pos_x, self.pos_y)]
+        steps = 0
+        max_steps = self.genetic_code.get_gene('speed').value
+        eats = 0
+        
+        while (steps < max_steps):
+            cell = queue.pop(0)
+            best_move = [0,-1,None]
+            for i in range(4):
+                new_cell = (cell[0] + directions[i][0], cell[1] + directions[i][1])
+                if perception.valid_cell_to_move(new_cell[0], new_cell[1]):
+                    
+                    if eats == 0:
+                        eat_coeficent = 1
+                        tree_coeficent = 0.8
+                        edge_coeficent = 0
+                    elif eats == 1:
+                        eat_coeficent = 0.5
+                        tree_coeficent = 0.25
+                        edge_coeficent = 0.5
+                    else:
+                        eat_coeficent = 0
+                        tree_coeficent = 0.10
+                        edge_coeficent = 1
+                        
+                    p = len(perception.map[new_cell[0]][new_cell[1]].pheronomes)/100
+                    f = - eat_coeficent * mean([manhattan([new_cell.pos_x, new_cell.pos_y], [i[0], i[1]])
+                                for i in foods])
+                    t = - tree_coeficent * mean([manhattan([new_cell.pos_x, new_cell.pos_y], [i[0], i[1]])
+                                for i in trees])
+                    e = mean([manhattan([new_cell.pos_x, new_cell.pos_y], [i[0], i[1]])
+                                for i in enemies])
+                    c = -1 * abs(perception.map[new_cell[0]][new_cell[1]].height -
+                                perception.map[cell[0]][cell[1]].height)
+                    
+                    total = p + f + t + e + c
+                    if total < best_move[0]:
+                        best_move[0] = total
+                        best_move[1] = i
+                        best_move[2] = new_cell
+                        
+                queue.append(best_move[1])
+                plan.append(directions_actions[best_move[i]])
+                if perception.map[new_cell[0]][new_cell[1]].have_food():
+                    plan.append(action.Eat())
+                
+                
+            if perception.cell_have_food(cell[0], cell[1], self):
+                return self.make_plan(cell, pi, plan, perception.dimension_y)
+
+        return self.get_random_move(perception)
+    
     def look_for_food(self, perception):
         """
         Devuelve una lista de acciones que se deben realizar para conseguir comida.
@@ -282,6 +458,7 @@ class Agent(object_base.ObjectBase):
                     ] = directions_actions[i]
 
         return self.get_random_move(perception)
+    
 
     def go_to_edge(self, perception):
         """
@@ -352,7 +529,40 @@ class Agent(object_base.ObjectBase):
             l = self.look_for_food(perception)[: self.genetic_code.get_gene('speed').value]
             return l
         return self.go_to_edge(perception)[: self.genetic_code.get_gene('speed').value]
+    
+    def see_around(self, world):
+        left_corner_x = max(0, self.pos_x - self.genetic_code.get_gene('sense').value)
+        left_corner_y = max(0, self.pos_y - self.genetic_code.get_gene('sense').value)
+        right_corner_x = min(self.pos_x + self.genetic_code.get_gene('sense').value,
+                             world.dimension_x - 1)
+        right_corner_y = min(self.pos_y + self.genetic_code.get_gene('sense').value,
+                             world.dimension_y - 1)
 
+        self.perception_pos_x = min(self.pos_x, self.genetic_code.get_gene('sense').value)
+        self.perception_pos_y = min(self.pos_y, self.genetic_code.get_gene('sense').value)
+        
+        foods = []
+        trees = []
+        enemies = []
+        
+        for i in range(left_corner_x, right_corner_x + 1):
+            for j in range(left_corner_y, right_corner_y + 1):
+                current_tile = world.map[i][j]
+                if current_tile.have_food():
+                    foods.append((i,j))
+                if current_tile.have_tree():
+                    trees.append((i,j))
+                if current_tile.have_agent():
+                    agent = current_tile.get_agent()
+                    if (agent.genetic_code.get_gene('size').value - 2 >=
+                        self.genetic_code.get_gene('size').value):
+                        enemies.append((i,j))
+                    else:
+                        foods.append((i,j))
+                        
+        return (left_corner_x, left_corner_y, right_corner_x, right_corner_y),foods,trees,enemies
+        
+        
     def see(self, world):
         """
         Devuelve la percepción del mundo que tiene el agente.
@@ -410,3 +620,24 @@ class Pheromone:
     
     def evaporate(self):
         self.time -= 1
+        
+class Node:
+    def __init__(self, parent=None, position=None):
+        self.parent = parent
+        self.position = position
+
+        self.g = 0
+        self.h = 0
+        self.f = 0
+
+    def __eq__(self, other):
+        return self.position == other.position
+    
+def mean(array):
+    t = 0
+    for e in array:
+        t = t + e
+    return t/len(array) if len(array) else 0
+
+def manhattan(pos1, pos2):
+    return int(abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1]))
