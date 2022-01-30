@@ -33,7 +33,7 @@ class World:
         m = ""
         for i in range(self.dimension_x):
             for j in range(self.dimension_y):
-                m += str(self.map[i][j][-1]) + " "
+                m += str(self.map[i][j]) + " "
             m += "\n"
         return m
 
@@ -52,14 +52,14 @@ class World:
             self.map.append([])
             for j in range(dimension_y):
                 self.map[i].append([])
+                base = object_base.Tile(i, j)
+                base.height = elevation[i][j]
+                self.map[i][j] = (base)
                 if i == 0 or i == dimension_x - 1:
-                    self.map[i][j].append(object_base.Edge(i, j))
+                    self.map[i][j].is_edge = True
                 elif j == 0 or j == dimension_y - 1:
-                    self.map[i][j].append(object_base.Edge(i, j))
-                else: 
-                    base = object_base.ObjectBase(i, j)
-                    base.height = elevation[i][j]
-                    self.map[i][j].append(base)
+                    self.map[i][j].is_edge = True
+                    
 
     def add_soil(self, pos_x, pos_y, amount = 1):
         """
@@ -70,7 +70,7 @@ class World:
         
         :rtype: None
         """
-        self.map[pos_x][pos_y][1].level_up(amount)
+        self.map[pos_x][pos_y].level_up(amount)
         
     def del_soil(self, pos_x, pos_y, amount = 1):
         """
@@ -81,7 +81,7 @@ class World:
         
         :rtype: None
         """
-        self.map[pos_x][pos_y][1].level_down(amount)
+        self.map[pos_x][pos_y].level_down(amount)
     
     def add_tree(self, count):
         """
@@ -99,7 +99,7 @@ class World:
                 max_life = randint(1, 10)
                 tree = object_base.Tree(pos_x, pos_y, max_life)
                 self.trees.append(tree)
-                self.map[pos_x][pos_y].append(tree)
+                self.map[pos_x][pos_y].object_list.append(tree)
                 count = count - 1
     
     def add_trees_food(self, max_food):
@@ -122,7 +122,7 @@ class World:
                     not self.cell_is_edge(pos_x, pos_y)
                     and not self.cell_have_tree(pos_x, pos_y)
                     ):
-                    self.map[pos_x][pos_y].append(object_base.Food(pos_x, pos_y))
+                    self.map[pos_x][pos_y].object_list.append(object_base.Food(pos_x, pos_y))
                     food_amount = food_amount - 1
                     used = used + 1
         return used
@@ -148,7 +148,7 @@ class World:
                 not self.cell_is_edge(pos_x, pos_y)
                 and not self.cell_have_tree(pos_x, pos_y)
                 ):
-                self.map[pos_x][pos_y].append(object_base.Food(pos_x, pos_y))
+                self.map[pos_x][pos_y].object_list.append(object_base.Food(pos_x, pos_y))
                 food_amount = food_amount - 1
 
     def get_a_peek(
@@ -206,10 +206,7 @@ class World:
         :rtype: bool
         :return: True || False
         """
-        for c in self.map[pos_x][pos_y]:
-            if isinstance(c, object_base.Edge):
-                return True
-        return False
+        return self.map[pos_x][pos_y].is_edge
 
     def valid_cell_to_move(self, pos_x, pos_y):
         """
@@ -242,8 +239,21 @@ class World:
         :rtype: bool
         :return: True || False
         """
-        for c in self.map[pos_x][pos_y]:
-            if c.is_food or (
+        # for c in self.map[pos_x][pos_y]:
+        #     if c.has_food or (
+        #         c.__class__ == agent.__class__
+        #         #and hasattr(c, "size_gene")
+        #         and c.genetic_code.have_gene('size')
+        #         and (agent.genetic_code.get_gene('size').value - 2 >= 
+        #              c.genetic_code.get_gene('size').value)
+        #         and c.is_alive
+        #     ):
+        #         return True
+        # return False
+        if self.map[pos_x][pos_y].has_food:
+            return True
+        for c in self.map[pos_x][pos_y].object_list:
+            if (
                 c.__class__ == agent.__class__
                 #and hasattr(c, "size_gene")
                 and c.genetic_code.have_gene('size')
@@ -266,11 +276,9 @@ class World:
         :rtype: bool
         :return: True || False
         """
-        for c in self.map[pos_x][pos_y]:
-            if c.is_tree:
-                return True
-        return False
+        return self.map[pos_x][pos_y].has_tree
     
+      
     def move_agent(self, agent, new_pos_x, new_pos_y):
         """
         Reubica un agente en el mapa a la casilla (new_pos_x, new_pos_y)
@@ -284,8 +292,8 @@ class World:
 
         :rtype: None
         """
-        self.map[new_pos_x][new_pos_y].append(agent)
-        self.map[agent.pos_x][agent.pos_y].remove(agent)
+        self.map[new_pos_x][new_pos_y].object_list.append(agent)
+        self.map[agent.pos_x][agent.pos_y].object_list.remove(agent)
 
     def agent_eat_food(self, food_pos_x, food_pos_y, agent):
         """
@@ -345,7 +353,7 @@ class World:
 
         :rtype: None
         """
-        self.map[edge_pos_x][edge_pos_y].append(agent)
+        self.map[edge_pos_x][edge_pos_y].object_list.append(agent)
 
     def remove_agent(self, agent):
         """
@@ -356,7 +364,7 @@ class World:
 
         :rtype: None
         """
-        self.map[agent.pos_x][agent.pos_y].remove(agent)
+        self.map[agent.pos_x][agent.pos_y].object_list.remove(agent)
 
     def remove_tree(self): 
         """
@@ -367,27 +375,27 @@ class World:
         """       
         for r in range(1, self.dimension_x - 1):
             for c in range(1, self.dimension_y - 1):
-                for k in range(len(self.map[r][c]) - 1, -1, -1):
+                for k in range(len(self.map[r][c].object_list) - 1, -1, -1):
                     if (
-                        self.map[r][c][k].is_tree and 
-                        self.map[r][c][k].max_life == self.map[r][c][k].age
+                        self.map[r][c].has_tree and 
+                        self.map[r][c].object_list[k].max_life == self.map[r][c].object_list[k].age
                         ):
-                        self.map[r][c].pop(k)
+                        self.map[r][c].object_list.pop(k)
     
-    def remove_pheromones(self):
-        """
-        Evapora las feromonas, y si esta llega al\n
-        tiempo máximo de existencia, la elimina
+    # def remove_pheromones(self):
+    #     """
+    #     Evapora las feromonas, y si esta llega al\n
+    #     tiempo máximo de existencia, la elimina
         
-        :rtype: None
-        """   
-        for r in range(1, self.dimension_x - 1):
-            for c in range(1, self.dimension_y - 1):
-                pheromones = self.map[r][c].pheromones
-                for p in pheromones:
-                    p.evaporate()
-                    if p.time == 0:
-                        pheromones.remove(p)
+    #     :rtype: None
+    #     """   
+    #     for r in range(1, self.dimension_x - 1):
+    #         for c in range(1, self.dimension_y - 1):
+    #             pheromones = self.map[r][c].pheromones
+    #             for p in pheromones:
+    #                 p.evaporate()
+    #                 if p.time == 0:
+    #                     pheromones.remove(p)
     
     def remove_food(self):
         """
@@ -399,10 +407,12 @@ class World:
         """   
         for r in range(1, self.dimension_x - 1):
             for c in range(1, self.dimension_y - 1):
-                for k in range(len(self.map[r][c]) - 1, -1, -1):
-                    if self.map[r][c][k].is_food:
+                for k in range(len(self.map[r][c].object_list) - 1, -1, -1):
+                    if self.map[r][c].has_food:
                         if not self.cell_have_tree(r, c) and random() < 0.1:
                             max_life = randint(1, 10)
-                            self.map[r][c][k] = object_base.Tree(r, c, max_life)
+                            self.map[r][c].object_list[k] = object_base.Tree(r, c, max_life)
                         else:
-                            self.map[r][c].pop(k)
+                            self.map[r][c].object_list.pop(k)
+                            
+        

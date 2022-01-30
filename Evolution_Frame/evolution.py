@@ -113,7 +113,7 @@ class Simulator:
     def clean_map(self):
         self.world.remove_food()
         self.world.remove_tree()
-        self.world.remove_pheromones()
+        # self.world.remove_pheromones()
         
     def simulate_one_round(self):
         """
@@ -165,11 +165,18 @@ class Simulator:
         print("Día ->", self.get_simulation_day()," "+self.get_day_night)
         print("Número de agentes ->", self.get_number_of_agents())
         
+    #TODO: cambiar el diccionario agregando que revise la lista.
     def print_world(self,world):
         m = ""
         for i in range(world.dimension_x):
             for j in range(world.dimension_y):
-                m += self.world_dict[str(world.map[i][j][-1])]
+                if len(self.world.map[i][j].object_list) > 0:
+                    m+= self.world_dict[str(world.map[i][j].object_list[-1])]
+                elif self.world.map[i][j].is_edge:
+                    m+= self.world_dict['Edge']
+                else :
+                    m+= self.world_dict['Nothing']
+                # m += self.world_dict[str(world.map[i][j])]
             m += "\n"
         print(m) 
         
@@ -177,7 +184,7 @@ class Simulator:
         m = ""
         for i in range(world.dimension_x):
             for j in range(world.dimension_y):
-                val = world.map[i][j][0].height
+                val = world.map[i][j].height
                 m += str(val) + "  " if val >= 0 else str(val) + " "
             m += "\n"
         print(m) 
