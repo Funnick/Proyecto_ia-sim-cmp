@@ -49,3 +49,7 @@ for i in range(6):
       s.simulate_one_round()
       s.world.add_food(10)
       s.print_world(s.world)
+
+
+#TODO: Agregar los metodos que setean si tiene o no tiene comida arboles etc 
+# un tile. 

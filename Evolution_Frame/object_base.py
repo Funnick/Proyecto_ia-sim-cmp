@@ -1,4 +1,4 @@
-class ObjectBase:
+class Tile:
     """
     Clase que representa el objeto base\n
     del mapa. Todos los elementos\n
@@ -15,56 +15,46 @@ class ObjectBase:
         :param pos_y: coordenada y del objeto
         :type pos_y: int
 
-        :rtype: ObjectBase
+        :rtype: Tile
         """
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.is_edge = False
-        self.is_food = False
-        self.is_tree = False
-        self.is_soil = False
+        self.has_food = False
+        self.has_tree = False
+        self.has_soil = False
         self.can_pass = True
         self.smell = []
+        self.object_list = []
         self.height = 0
 
     def __str__(self):
         return "Nothing"
 
-
-class Edge(ObjectBase):
-    """
-    Clase que representa el borde del mundo.
-    """
-
-    def __init__(self, pos_x, pos_y):
-        ObjectBase.__init__(self, pos_x, pos_y)
-        self.is_edge = True
-
-    def __str__(self):
-        return "Edge"
+class Object_base():
+    def __init__ (self):
+        pass
 
 
-class Food(ObjectBase):
+class Food(Object_base):
     """
     Clase que representa la comida\n
     del mundo.
     """
 
     def __init__(self, pos_x, pos_y):
-        ObjectBase.__init__(self, pos_x, pos_y)
-        self.is_food = True
+        Tile.__init__(self, pos_x, pos_y)
 
     def __str__(self):
         return "Food"
 
 
-class Tree(ObjectBase):
+class Tree(Object_base):
     """
     Clase que representa los árboles del mundo.
     """
     def __init__(self, pos_x, pos_y, max_life):
-        ObjectBase.__init__(self, pos_x, pos_y)
-        self.is_tree = True
+        Tile.__init__(self, pos_x, pos_y)
         self.max_life = max_life
         self.age = 0
 

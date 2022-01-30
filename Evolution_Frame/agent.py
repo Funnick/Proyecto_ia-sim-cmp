@@ -11,7 +11,7 @@ directions_actions = [
     action.MoveWest(),
     action.MoveEast(),  
 ]
-class Agent(object_base.ObjectBase):
+class Agent(object_base.Tile):
     """
     Clase que reprenseta a los agentes de la simulación.
     """
@@ -29,7 +29,7 @@ class Agent(object_base.ObjectBase):
 
         :rtype: Agent
         """
-        object_base.ObjectBase.__init__(self, pos_x, pos_y)
+        object_base.Tile.__init__(self, pos_x, pos_y)
         self.is_alive = True
         self.perception_pos_x = -1
         self.perception_pos_y = -1
@@ -400,13 +400,13 @@ class Agent(object_base.ObjectBase):
                 right_corner_x - left_corner_x + 1,
                 right_corner_y - left_corner_y + 1)
 
-    def set_feromone(self, world):
-        world.map[self.pos_x][self.pos_y].add_feromone(Pheromone())
+#     def set_feromone(self, world):
+#         world.map[self.pos_x][self.pos_y].add_feromone(Pheromone())
         
-class Pheromone:
-    def __init__(self, value = 1):
-        self.value = value
-        self.time = 2
+# class Pheromone:
+#     def __init__(self, value = 1):
+#         self.value = value
+#         self.time = 2
     
-    def evaporate(self):
-        self.time -= 1
+#     def evaporate(self):
+#         self.time -= 1
