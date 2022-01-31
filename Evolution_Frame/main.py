@@ -2,57 +2,23 @@ import evolution
 import agent
 import gene
 import object_base
+from matplotlib import pyplot as plt
 
-s = evolution.Simulator()
-
-s.create_world(20, 20, 5)
-a = agent.Agent(-1, -1, 300)
-s.add_agent_to_simulation(a)
-"""
-s.world.add_food(10, 5)
-
-print(s.world)
-s.simulate_one_agent_action()
-print(s.world)
-
-s.create_world(dimension_x= 5,dimension_y= 10, trees = 3)
-a = agent.Agent(-1, -1, 100)
-a1 = agent.Agent(-1, -1, 100)
-a2 = agent.Agent(-1, -1, 100)
-a3 = agent.Agent(-1, -1, 100)
-a4 = agent.Agent(-1, -1, 100)
-s.add_agent_to_simulation(a)
-s.add_agent_to_simulation(a1)
-s.add_agent_to_simulation(a2)
-s.add_agent_to_simulation(a3)
-#s.add_agent_to_simulation(a4)
-def f(s):
-      if s.get_days() > 10:
-            return False
-      
-for i in range(10):
-      print(s.world)
-      s.world.add_food(8)
-      print('-----------------------------')
-      print(s.world)
-      s.simulate_one_round()
-      print(s.world)
-      print('-----------------------------')    
-s.create_world(10, 10)
-"""
-s.world.add_food(100)
-s.print_world(s.world)
-s.print_altitude(s.world)
-print()
-
-for i in range(30):
-      s.simulate_one_round()
-      s.world.add_food(100)
-      s.print_world(s.world)
-#
-# s.print_footprints(s.world)
-      s.get_statistics()
-
+for j in range(30):
+      agents = []
+      s = evolution.Simulator()
+      s.create_world(10, 10, 5)
+      #print("Nueva simulacion", j)
+      for i in range(5):
+            s.add_agent_to_simulation(agent.Agent(-1, -1, 300))
+      for i in range(50):
+            #print("Nuevo día", i)
+            s.world.add_food(100)
+            s.simulate_one_round()
+            agents.append(s.get_number_of_agents())
+      #s.print_footprints(s.world)
+      plt.plot([i for i in range(len(agents))], agents, '-', c='r')
+plt.show()
 
 #TODO: Agregar los metodos que setean si tiene o no tiene comida arboles etc 
 # un tile. 

@@ -1,4 +1,4 @@
-import object_base
+from object_base import *
 import perlin
 from random import randint, random
 
@@ -52,7 +52,7 @@ class World:
             self.map.append([])
             for j in range(dimension_y):
                 self.map[i].append([])
-                base = object_base.Tile(i, j)
+                base = Tile(i, j)
                 base.height = elevation[i][j]
                 self.map[i][j] = (base)
                 if i == 0 or i == dimension_x - 1:
@@ -74,7 +74,7 @@ class World:
             pos_x, pos_y = u // self.dimension_y, u % self.dimension_y
             if not self.cell_is_edge(pos_x, pos_y) and not self.cell_have_tree(pos_x, pos_y):
                 max_life = randint(1, 10)
-                tree = object_base.Tree(pos_x, pos_y, max_life)
+                tree = Tree(pos_x, pos_y, max_life)
                 self.trees.append(tree)
                 self.map[pos_x][pos_y].object_list.append(tree)
                 self.map[pos_x][pos_y].has_tree = True
@@ -94,17 +94,19 @@ class World:
         for tree in self.trees:
             tree.get_older()
             food_amount = randint(0, int(max_food/len(self.trees)))
-            while food_amount > 0:
+            tries = 0
+            while food_amount > 0 and tries < 10:
                 pos_x, pos_y = tree.pos_x + randint(-1, 1), tree.pos_y + randint(-1, 1)
                 if (
-                    # El problema es Justo AQUI
                     not self.cell_is_edge(pos_x, pos_y)
-                    #and not self.cell_have_tree(pos_x, pos_y)
+                    and not self.cell_have_tree(pos_x, pos_y)
                     ):
-                    self.map[pos_x][pos_y].object_list.append(object_base.Food(pos_x, pos_y))
+                    self.map[pos_x][pos_y].object_list.append(Food(pos_x, pos_y))
                     self.map[pos_x][pos_y].has_food = True
                     food_amount = food_amount - 1
                     used = used + 1
+                tries += 1
+                    
         return used
         
     
@@ -126,10 +128,9 @@ class World:
             pos_x, pos_y = u // self.dimension_y, u % self.dimension_y
             if (
                 not self.cell_is_edge(pos_x, pos_y)
-                #and not self.cell_have_tree(pos_x, pos_y)
-                #and not self.cell_have_food(pos_x, pos_y)
+                and not self.cell_have_tree(pos_x, pos_y)
                 ):
-                self.map[pos_x][pos_y].object_list.append(object_base.Food(pos_x, pos_y))
+                self.map[pos_x][pos_y].object_list.append(Food(pos_x, pos_y))
                 self.map[pos_x][pos_y].has_food = True
                 food_amount = food_amount - 1
 
@@ -178,17 +179,6 @@ class World:
         :rtype: bool
         :return: True || False
         """
-        # for c in self.map[pos_x][pos_y]:
-        #     if c.has_food or (
-        #         c.__class__ == agent.__class__
-        #         #and hasattr(c, "size_gene")
-        #         and c.genetic_code.have_gene('size')
-        #         and (agent.genetic_code.get_gene('size').value - 2 >= 
-        #              c.genetic_code.get_gene('size').value)
-        #         and c.is_alive
-        #     ):
-        #         return True
-        # return False
         if self.map[pos_x][pos_y].has_food:
             return True
         return False
@@ -240,20 +230,44 @@ class World:
         :return: True || False
         """
         for c in self.map[food_pos_x][food_pos_y].object_list:
-            if isinstance(c, object_base.Food):
-                self.map[food_pos_x][food_pos_y].object_list.remove(c)
-                self.map[food_pos_x][food_pos_y].has_food = False
-                return True, None
+            if isinstance(c, Food):
+                return True, True, c
             if (
                 c.__class__ == agent.__class__
-                #and hasattr(c, "size_gene")
                 and (agent.genetic_code.get_gene('size').value - 2 >=
                      c.genetic_code.get_gene('size').value)
                 and c.is_alive
             ):
-                return True, c
+                return True, False, c
 
-        return False, None
+        return False, False, None
+    
+    def agents_have_sex(self, couple_x, couple_y, agent):
+        """
+        Comprueba si existe una posible pareja en la casilla (couple_x, couple_y),
+        de existir, practican la reproducción sexual y devuelve verdadero,
+        devuelve falso en otro caso.
+
+        :param couple_x: coordenada x de la casilla
+        :type couple_x: int
+        :param couple_y: coordenada y de la casilla
+        :type couple_y: int
+
+        :rtype: bool
+        :return: True || False
+        """
+        for c in self.map[food_pos_x][food_pos_y].object_list:
+            if isinstance(c, Food):
+                return True, True, c
+            if (
+                c.__class__ == agent.__class__
+                and (agent.genetic_code.get_gene('size').value - 2 >=
+                     c.genetic_code.get_gene('size').value)
+                and c.is_alive
+            ):
+                return True, False, c
+
+        return False, False, None
 
     def get_pos_random_edge(self):
         """
@@ -309,7 +323,7 @@ class World:
         for r in range(1, self.dimension_x - 1):
             for c in range(1, self.dimension_y - 1):
                 for k in range(len(self.map[r][c].object_list) - 1, -1, -1):
-                    if (isinstance(self.map[r][c].object_list[k], object_base.Tree)  and 
+                    if (isinstance(self.map[r][c].object_list[k], Tree)  and 
                         self.map[r][c].object_list[k].max_life == 
                         self.map[r][c].object_list[k].age):
                         self.map[r][c].object_list.pop(k)
@@ -344,7 +358,7 @@ class World:
                     if self.map[r][c].has_food:
                         if not self.map[r][c].has_tree and random() < 0.02:
                             max_life = randint(1, 10)
-                            tree = object_base.Tree(r, c, max_life)
+                            tree = Tree(r, c, max_life)
                             self.map[r][c].object_list[k] = tree
                             self.trees.append(tree)
                             self.map[r][c].has_tree = True
@@ -353,3 +367,33 @@ class World:
                 self.map[r][c].has_food = False
                             
         
+class Tile:
+    """
+    Clase que representa una casilla del mapa\n. 
+    Todos los elementos del mundo se ubican sobre él.
+    """
+
+    def __init__(self, pos_x, pos_y):
+        """
+        Se crea un objeto en la ubicación (pos_x, pos_y),
+        se define por defecto que no es un borde ni comida.
+
+        :param pos_x: coordenada x del objeto
+        :type pos_x: int
+        :param pos_y: coordenada y del objeto
+        :type pos_y: int
+
+        :rtype: Tile
+        """
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        self.is_edge = False
+        self.has_food = False
+        self.has_tree = False
+        self.has_agent = False
+        self.footprints = []
+        self.object_list = []
+        self.height = 0
+
+    def __str__(self):
+        return "Nothing"

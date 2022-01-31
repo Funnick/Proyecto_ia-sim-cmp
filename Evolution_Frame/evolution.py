@@ -49,7 +49,7 @@ class Simulator:
         """
         self.restrictions = func
     
-    def add_agent_to_simulation(self, agent):
+    def add_agent_to_simulation(self, agent, pos = (-1,-1)):
         """
         Añade un nuevo agente a la simulación.
 
@@ -58,7 +58,9 @@ class Simulator:
 
         :rtype: None
         """
-        r, c = self.world.get_pos_random_edge()
+        if pos == (-1,-1):
+            r, c = self.world.get_pos_random_edge()
+        else: r,c = pos[0],pos[1]
         agent.pos_x = r
         agent.pos_y = c
         self.agents.append(agent)
@@ -106,14 +108,23 @@ class Simulator:
         """
         for ag in self.agents:
             if ag.food_eat_today == 2:
-                self.add_agent_to_simulation(ag.asexual_reproduction())
+                self.add_agent_to_simulation(ag.asexual_reproduction(),(ag.pos_x,ag.pos_y))
 
     def reset_agents_attributes(self):
+        """
+        Reinicia los atributos de todos los agentes de la simulación
+        """
         for ag in self.agents:
             ag.food_eat_today = 0
             ag.current_energy = ag.max_energy
 
     def clean_map(self):
+        """
+        Limpia o actualiza la simulación de todos los 
+        objetos presentes que deben ser retirados.
+        
+        :rtype: None
+        """
         self.world.remove_food()
         self.world.remove_tree()
         self.world.remove_footprints()

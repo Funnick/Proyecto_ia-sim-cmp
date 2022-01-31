@@ -1,4 +1,4 @@
-import object_base
+from object_base import *
 import gene
 import action
 from random import randint
@@ -9,9 +9,9 @@ directions_actions = [
     action.MoveNorth(),
     action.MoveSouth(),
     action.MoveWest(),
-    action.MoveEast(),  
+    action.MoveEast()
 ]
-class Agent(object_base.Tile):
+class Agent(Object_base):
     """
     Clase que reprenseta a los agentes de la simulación.
     """
@@ -29,18 +29,17 @@ class Agent(object_base.Tile):
 
         :rtype: Agent
         """
-        object_base.Tile.__init__(self, pos_x, pos_y)
+        Object_base.__init__(self, pos_x, pos_y)
         self.is_alive = True
-        self.perception_pos_x = -1
-        self.perception_pos_y = -1
         self.food_eat_today = 0
         self.max_energy = max_energy
         self.current_energy = max_energy
-        self.sex = 0
+        self.life_span = 10
+        self.pregnant = False
         self.age = 0
         self.genetic_code = gene.GeneticCode()
         self.energy_lost_fun = lambda sense, speed, size: (
-            self.genetic_code.get_gene('sense').value + 
+            self.genetic_code.get_gene('sense').value +
             self.genetic_code.get_gene('speed').value + 
             self.genetic_code.get_gene('size').value)
 
@@ -57,14 +56,6 @@ class Agent(object_base.Tile):
         son_agent.genetic_code = self.genetic_code + other_agent.genetic_code
         return son_agent
     
-    def memory(self, pos, type):
-        if type == 'Tree':
-            self.memory[0].append(pos)
-        elif type == 'Agent':
-            self.memory[1].append(pos)
-        elif type == 'Food':
-            self.memory[2].append(pos)
-    
     def get_older(self):
         """
         Envejece al agente en un punto.\n
@@ -74,6 +65,8 @@ class Agent(object_base.Tile):
         
         """
         self.age += 1
+        if self.life_span == self.age:
+            self.is_alive = False
         return self.age
     
     def add_gene(self, gene):
@@ -155,8 +148,7 @@ class Agent(object_base.Tile):
             return True
         else:
             return False
-            
-    
+               
     def move(self, perception):
         """
         Retorna una lista de acciones que debe realizar el agente\n
@@ -173,6 +165,8 @@ class Agent(object_base.Tile):
         :type perception.Item4: List
         :param perception.Item5: Lista de enemigos vistos por el agente
         :type perception.Item5: List
+        :param perception.Item6: Lista de posibles parejas vistas por el agente
+        :type perception.Item6: List
 
         :rtype: Action list
         """
@@ -189,6 +183,7 @@ class Agent(object_base.Tile):
         foods = perception[2]
         trees = perception[3]
         enemies = perception[4]
+        couples = perception[5]
         plan = []
         path = []
 
@@ -200,6 +195,30 @@ class Agent(object_base.Tile):
             cell = queue.pop(0)
             path.append(cell)
             best_move = [10000,-1,None]
+            
+            # Reglas ----------------------------------
+            if self.food_eat_today == 0:
+                eat_coeficent = 1
+                tree_coeficent = 0.30
+                edge_coeficent = 0
+                sex_coeficent = 0.10
+            elif self.food_eat_today == 1:
+                if self.current_energy < self.max_energy / 2:
+                    eat_coeficent = 0
+                    tree_coeficent = 0.10
+                    edge_coeficent = 1
+                    sex_coeficent = 0.2
+                else: 
+                    eat_coeficent = 0.5
+                    tree_coeficent = 0.15
+                    edge_coeficent = 0.1
+                    sex_coeficent = 0.15
+            else:
+                eat_coeficent = 0
+                tree_coeficent = 0.10
+                edge_coeficent = 1
+                sex_coeficent = 0.2
+            # --------------------------------------------
             for i in range(4):
                 new_cell = (cell[0] + directions[i][0], cell[1] + directions[i][1])
                 if (self.in_limits((new_cell[0], new_cell[1]), limits)):
@@ -207,40 +226,41 @@ class Agent(object_base.Tile):
                     if (world.cell_is_edge(new_cell[0], new_cell[1]) and 
                         self.food_eat_today == 0):
                         continue
-                    if self.food_eat_today == 0:
-                        eat_coeficent = 1
-                        tree_coeficent = 0.30
-                        edge_coeficent = 0
-                    elif self.food_eat_today == 1:
-                        if self.current_energy < self.max_energy / 2:
-                            eat_coeficent = 0
-                            tree_coeficent = 0.10
-                            edge_coeficent = 1
-                        else: 
-                            eat_coeficent = 0.5
-                            tree_coeficent = 0.15
-                            edge_coeficent = 0.1
-                    else:
-                        eat_coeficent = 0
-                        tree_coeficent = 0.10
-                        edge_coeficent = 1
                         
-                    p = 0.1 * len(world.map[new_cell[0]][new_cell[1]].footprints)
-                    f = eat_coeficent * mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
+                    footprints = 0.1 * len(world.map[new_cell[0]][new_cell[1]].footprints)
+                    
+                    foods_nearby = eat_coeficent * mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
                                 for i in foods])
-                    t = tree_coeficent * mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
+                    
+                    trees_nearby = tree_coeficent * mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
                                 for i in trees])
-                    e = mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
+                    
+                    couples_nearby = sex_coeficent * mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
+                                for i in couples])
+                    
+                    enemies_nearby = mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
                                 for i in enemies])
-                    c = -0.1 * abs(world.map[new_cell[0]][new_cell[1]].height -
+                    
+                    elevation_diff = 0.1 * abs(world.map[new_cell[0]][new_cell[1]].height -
                                 world.map[cell[0]][cell[1]].height)
-                    s = 10 if new_cell in path else 0
+                    
+                    cells_visited = 8 if new_cell in path else 0
+                    
                     edges = [abs(new_cell[0] - (world.dimension_x -1)),
                              abs(new_cell[1] - (world.dimension_y -1)),
                              new_cell[0], new_cell[1]]
-                    w = edge_coeficent * mean(edges)
                     
-                    total = p + f + t + e + c + s + w
+                    edges_nearbys = edge_coeficent * mean(edges)
+                    
+                    total = (footprints +
+                             foods_nearby +
+                             trees_nearby -
+                             enemies_nearby -
+                             elevation_diff +
+                             cells_visited +
+                             edges_nearbys +
+                             couples_nearby)
+                    
                     if total < best_move[0]:
                         best_move[0] = total
                         best_move[1] = i
@@ -284,6 +304,8 @@ class Agent(object_base.Tile):
         :type trees: list
         :param enemies: coordenadas de los enemigos vistos por el agente
         :type enemies: list
+        :param couples: coordenadas de las posibles parejas vistas por el agente
+        :type couples: list
 
         :rtype: World
         :return:(world, 
@@ -293,7 +315,8 @@ class Agent(object_base.Tile):
                   right_corner_y),
                  foods,
                  trees,
-                 enemies)
+                 enemies,
+                 couples)
         """
         left_corner_x = max(0, self.pos_x - self.genetic_code.get_gene('sense').value)
         left_corner_y = max(0, self.pos_y - self.genetic_code.get_gene('sense').value)
@@ -304,14 +327,15 @@ class Agent(object_base.Tile):
         foods = []
         trees = []
         enemies = []
+        couples = []
         
         for i in range(left_corner_x, right_corner_x + 1):
             for j in range(left_corner_y, right_corner_y + 1):
                 current_tile = world.map[i][j]
                 for element in current_tile.object_list:
-                    if isinstance(element, object_base.Food):
+                    if isinstance(element, Food):
                         foods.append((i,j))
-                    elif isinstance(element, object_base.Tree):
+                    elif isinstance(element, Tree):
                         trees.append((i,j))
                     elif not(element is self) and isinstance(element, self.__class__):
                         agent = element
@@ -321,16 +345,20 @@ class Agent(object_base.Tile):
                         elif (self.genetic_code.get_gene('size').value - 2 >=
                             agent.genetic_code.get_gene('size').value):
                             foods.append((i,j))
+                        elif (self.genetic_code.get_gene('reproduction').value == 2 and
+                            agent.genetic_code.get_gene('reproduction').value == 2): 
+                            reproduction.append((i,j))
                         
-        return (world, 
+        return (world,
                 (left_corner_x,
                  right_corner_x,
                  left_corner_y,
                  right_corner_y),
                 foods,
                 trees,
-                enemies)
-
+                enemies,
+                couples)
+    
     def set_footprint(self, world):
         """
         Método para ubicar una pisada del agente en una casilla

@@ -80,11 +80,32 @@ class Eat(Action):
     """
 
     def aux_execute(self, world, agent):
-        agent_eat, agent_f = world.agent_eat_food(agent.pos_x, agent.pos_y, agent)
+        agent_eat, _type, food = world.agent_eat_food(agent.pos_x, agent.pos_y, agent)
         if agent_eat:
             agent.food_eat_today = agent.food_eat_today + 1
-            if agent_f != None:
-                agent_f.is_alive = False
+            if _type:
+                world.map[agent.pos_x][ agent.pos_y].object_list.remove(food)
+                if not world.cell_have_food(agent.pos_x,  agent.pos_y):
+                    world.map[agent.pos_x][ agent.pos_y].has_food = False
+            else:
+                food.is_alive = False
+                
 
     def __str__(self):
         return "ActionEat"
+
+class HaveSex(Action):
+    """
+    Mueve al agente en dirección oeste
+    """
+
+    def aux_execute(self, world, agent):
+        agent_eat, _type, food = world.agent_eat_food(agent.pos_x, agent.pos_y, agent)
+        if agent_eat:
+            agent.food_eat_today = agent.food_eat_today + 1
+            if _type:
+                world.map[agent.pos_x][ agent.pos_y].object_list.remove(food)
+                if not world.cell_have_food(agent.pos_x,  agent.pos_y):
+                    world.map[agent.pos_x][ agent.pos_y].has_food = False
+            else:
+                food.is_alive = False
