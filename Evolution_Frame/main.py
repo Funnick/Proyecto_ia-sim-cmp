@@ -5,8 +5,8 @@ import object_base
 
 s = evolution.Simulator()
 
-s.create_world(10, 20, 5)
-a = agent.Agent(-1, -1, 200)
+s.create_world(20, 20, 5)
+a = agent.Agent(-1, -1, 300)
 s.add_agent_to_simulation(a)
 """
 s.world.add_food(10, 5)
@@ -40,15 +40,18 @@ for i in range(10):
       print('-----------------------------')    
 s.create_world(10, 10)
 """
-s.world.add_food(10)
+s.world.add_food(100)
 s.print_world(s.world)
 s.print_altitude(s.world)
 print()
 
-for i in range(6):
+for i in range(30):
       s.simulate_one_round()
-      s.world.add_food(10)
+      s.world.add_food(100)
       s.print_world(s.world)
+#
+# s.print_footprints(s.world)
+      s.get_statistics()
 
 
 #TODO: Agregar los metodos que setean si tiene o no tiene comida arboles etc 

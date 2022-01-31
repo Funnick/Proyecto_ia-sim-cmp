@@ -22,9 +22,9 @@ class Tile:
         self.is_edge = False
         self.has_food = False
         self.has_tree = False
-        self.has_soil = False
+        self.has_agent = False
         self.can_pass = True
-        self.smell = []
+        self.footprints = []
         self.object_list = []
         self.height = 0
 
@@ -44,6 +44,7 @@ class Food(Object_base):
 
     def __init__(self, pos_x, pos_y):
         Tile.__init__(self, pos_x, pos_y)
+        self.is_food = True
 
     def __str__(self):
         return "Food"
@@ -56,6 +57,7 @@ class Tree(Object_base):
     def __init__(self, pos_x, pos_y, max_life):
         Tile.__init__(self, pos_x, pos_y)
         self.max_life = max_life
+        self.is_tree = True
         self.age = 0
 
     def __str__(self):

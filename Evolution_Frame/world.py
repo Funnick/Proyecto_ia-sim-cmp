@@ -59,29 +59,6 @@ class World:
                     self.map[i][j].is_edge = True
                 elif j == 0 or j == dimension_y - 1:
                     self.map[i][j].is_edge = True
-                    
-
-    def add_soil(self, pos_x, pos_y, amount = 1):
-        """
-        Añade más nivel de suelo al mundo.
-        :param pos_x: x de la coordenada para colocar más suelo en el mundo.
-        :type pos_x: int
-        :param pos_y: y de la coordenada para colocar más suelo en el mundo.
-        
-        :rtype: None
-        """
-        self.map[pos_x][pos_y].level_up(amount)
-        
-    def del_soil(self, pos_x, pos_y, amount = 1):
-        """
-        Elimina nivel de suelo al mundo.
-        :param pos_x: x de la coordenada para retirar suelo del mundo.
-        :type pos_x: int
-        :param pos_y: y de la coordenada para retirar más suelo del mundo.
-        
-        :rtype: None
-        """
-        self.map[pos_x][pos_y].level_down(amount)
     
     def add_tree(self, count):
         """
@@ -100,6 +77,7 @@ class World:
                 tree = object_base.Tree(pos_x, pos_y, max_life)
                 self.trees.append(tree)
                 self.map[pos_x][pos_y].object_list.append(tree)
+                self.map[pos_x][pos_y].has_tree = True
                 count = count - 1
     
     def add_trees_food(self, max_food):
@@ -119,10 +97,12 @@ class World:
             while food_amount > 0:
                 pos_x, pos_y = tree.pos_x + randint(-1, 1), tree.pos_y + randint(-1, 1)
                 if (
+                    # El problema es Justo AQUI
                     not self.cell_is_edge(pos_x, pos_y)
-                    and not self.cell_have_tree(pos_x, pos_y)
+                    #and not self.cell_have_tree(pos_x, pos_y)
                     ):
                     self.map[pos_x][pos_y].object_list.append(object_base.Food(pos_x, pos_y))
+                    self.map[pos_x][pos_y].has_food = True
                     food_amount = food_amount - 1
                     used = used + 1
         return used
@@ -146,53 +126,12 @@ class World:
             pos_x, pos_y = u // self.dimension_y, u % self.dimension_y
             if (
                 not self.cell_is_edge(pos_x, pos_y)
-                and not self.cell_have_tree(pos_x, pos_y)
+                #and not self.cell_have_tree(pos_x, pos_y)
+                #and not self.cell_have_food(pos_x, pos_y)
                 ):
                 self.map[pos_x][pos_y].object_list.append(object_base.Food(pos_x, pos_y))
+                self.map[pos_x][pos_y].has_food = True
                 food_amount = food_amount - 1
-
-    def get_a_peek(
-        self,
-        left_corner_x,
-        left_corner_y,
-        right_corner_x,
-        right_corner_y,
-        dimension_x,
-        dimension_y,
-    ):
-        """
-        Devuelve un nuevo mundo, de tamaño dimension_x * dimension_y,
-        que es una copia de un lugar del mundo original. La parte que
-        es copiada es el cuadrado que tiene esquina superior izquierda
-        (left_corner_x y left_corner_y) y esquina inferior derecha
-        (right_corner_x y right_corner_y).
-
-        :param left_corner_x: coordenada x, esquina superior izquierda
-        :type left_corner_x: int
-        :param left_corner_y: coordenada y, esquina superior izquierda
-        :type left_corner_y: int
-        :param right_corner_x: coordenada x, esquina inferior derecha
-        :type right_corner_x: int
-        :param right_corner_y: coordenada y, esquina inferior derecha
-        :type right_corner_y: int
-        :param dimension_x: largo de la copia
-        :type dimension_x: int
-        :param dimension_y: ancho de la copia
-        :type dimension_y: int
-
-        :rtype: World
-        :return: w
-        """
-        w = World(dimension_x, dimension_y)
-        d_x, d_y = 0, 0
-        for i in range(left_corner_x, right_corner_x + 1):
-            for j in range(left_corner_y, right_corner_y + 1):
-                w.map[d_x][d_y] = self.map[i][j]
-                d_y = d_y + 1
-            d_x = d_x + 1
-            d_y = 0
-
-        return w
 
     def cell_is_edge(self, pos_x, pos_y):
         """
@@ -227,7 +166,7 @@ class World:
             and pos_y < self.dimension_y
         )
 
-    def cell_have_food(self, pos_x, pos_y, agent):
+    def cell_have_food(self, pos_x, pos_y):
         """
         Determina si existe comida en la casilla (pos_x, pos_y)
 
@@ -252,16 +191,6 @@ class World:
         # return False
         if self.map[pos_x][pos_y].has_food:
             return True
-        for c in self.map[pos_x][pos_y].object_list:
-            if (
-                c.__class__ == agent.__class__
-                #and hasattr(c, "size_gene")
-                and c.genetic_code.have_gene('size')
-                and (agent.genetic_code.get_gene('size').value - 2 >= 
-                     c.genetic_code.get_gene('size').value)
-                and c.is_alive
-            ):
-                return True
         return False
 
     def cell_have_tree(self, pos_x, pos_y):
@@ -293,7 +222,9 @@ class World:
         :rtype: None
         """
         self.map[new_pos_x][new_pos_y].object_list.append(agent)
+        self.map[new_pos_x][new_pos_y].has_agent = True
         self.map[agent.pos_x][agent.pos_y].object_list.remove(agent)
+        self.map[agent.pos_x][agent.pos_y].has_agent = False
 
     def agent_eat_food(self, food_pos_x, food_pos_y, agent):
         """
@@ -308,9 +239,10 @@ class World:
         :rtype: bool
         :return: True || False
         """
-        for c in self.map[food_pos_x][food_pos_y]:
-            if c.is_food:
-                self.map[food_pos_x][food_pos_y].remove(c)
+        for c in self.map[food_pos_x][food_pos_y].object_list:
+            if isinstance(c, object_base.Food):
+                self.map[food_pos_x][food_pos_y].object_list.remove(c)
+                self.map[food_pos_x][food_pos_y].has_food = False
                 return True, None
             if (
                 c.__class__ == agent.__class__
@@ -333,7 +265,7 @@ class World:
         """
         r = randint(0, self.dimension_x - 1)
         if r == 0 or r == self.dimension_x - 1:
-            c = randint(0, self.dimension_y - 1)
+            c = randint(1, self.dimension_y - 2 )
         elif random() <= 0.5:
             c = 0
         else:
@@ -365,6 +297,7 @@ class World:
         :rtype: None
         """
         self.map[agent.pos_x][agent.pos_y].object_list.remove(agent)
+        self.map[agent.pos_x][agent.pos_y].has_agent = False
 
     def remove_tree(self): 
         """
@@ -376,26 +309,26 @@ class World:
         for r in range(1, self.dimension_x - 1):
             for c in range(1, self.dimension_y - 1):
                 for k in range(len(self.map[r][c].object_list) - 1, -1, -1):
-                    if (
-                        self.map[r][c].has_tree and 
-                        self.map[r][c].object_list[k].max_life == self.map[r][c].object_list[k].age
-                        ):
+                    if (isinstance(self.map[r][c].object_list[k], object_base.Tree)  and 
+                        self.map[r][c].object_list[k].max_life == 
+                        self.map[r][c].object_list[k].age):
                         self.map[r][c].object_list.pop(k)
+                        self.map[r][c].has_tree = False
     
-    # def remove_pheromones(self):
-    #     """
-    #     Evapora las feromonas, y si esta llega al\n
-    #     tiempo máximo de existencia, la elimina
-        
-    #     :rtype: None
-    #     """   
-    #     for r in range(1, self.dimension_x - 1):
-    #         for c in range(1, self.dimension_y - 1):
-    #             pheromones = self.map[r][c].pheromones
-    #             for p in pheromones:
-    #                 p.evaporate()
-    #                 if p.time == 0:
-    #                     pheromones.remove(p)
+    def remove_footprints(self):
+        """
+        Evapora las feromonas, y si esta llega al\n
+        tiempo máximo de existencia, la elimina
+      
+        :rtype: None
+        """   
+        for r in range(1, self.dimension_x - 1):
+            for c in range(1, self.dimension_y - 1):
+                footprints = self.map[r][c].footprints
+                for f in footprints:
+                    f.disappear()
+                    if f.time == 0:
+                        footprints.remove(f)
     
     def remove_food(self):
         """
@@ -409,10 +342,14 @@ class World:
             for c in range(1, self.dimension_y - 1):
                 for k in range(len(self.map[r][c].object_list) - 1, -1, -1):
                     if self.map[r][c].has_food:
-                        if not self.cell_have_tree(r, c) and random() < 0.1:
+                        if not self.map[r][c].has_tree and random() < 0.02:
                             max_life = randint(1, 10)
-                            self.map[r][c].object_list[k] = object_base.Tree(r, c, max_life)
+                            tree = object_base.Tree(r, c, max_life)
+                            self.map[r][c].object_list[k] = tree
+                            self.trees.append(tree)
+                            self.map[r][c].has_tree = True
                         else:
                             self.map[r][c].object_list.pop(k)
+                self.map[r][c].has_food = False
                             
         

@@ -19,6 +19,7 @@ class Simulator:
         self.world = None
         self.restrictions = None
         self.agents = []
+        self.active_agents = []
         self.day = 0
         self.cycle = 0
 
@@ -71,12 +72,14 @@ class Simulator:
         """
 
         all_do_nothing_actions = True
-        shuffle(self.agents)
-        for ag in self.agents:
-            for act in ag.play(ag.see(self.world)):
+        shuffle(self.active_agents)
+        for ag in self.active_agents:
+            for act in ag.move(ag.see_around(self.world)):
                 if not (act.__class__ is DoNothing):
                     act.execute(self.world, ag)
                     all_do_nothing_actions = False
+                else:
+                    self.active_agents.remove(ag)
 
         return all_do_nothing_actions
 
@@ -113,7 +116,7 @@ class Simulator:
     def clean_map(self):
         self.world.remove_food()
         self.world.remove_tree()
-        # self.world.remove_pheromones()
+        self.world.remove_footprints()
         
     def simulate_one_round(self):
         """
@@ -121,21 +124,16 @@ class Simulator:
 
         :rtype: None
         """
-        self.cycle = self.cycle + 1
-
+        self.day = self.day + 1
+        self.active_agents = [a for a in self.agents]
         while not self.simulate_one_agent_action():
             pass
-
-        if self.is_day():
-            self.eliminate_poorly_positioned_hungry_agents()
-
-            self.replicate_agents()
-
-            self.reset_agents_attributes()
-
-        else:
-            self.day = self.day + 1
+        
+        self.eliminate_poorly_positioned_hungry_agents()
         self.clean_map()
+        self.replicate_agents()
+        self.reset_agents_attributes()
+        
 
     def get_simulation_day(self):
         """
@@ -162,7 +160,7 @@ class Simulator:
         return len(self.agents)
 
     def get_statistics(self):
-        print("Día ->", self.get_simulation_day()," "+self.get_day_night)
+        print("Día ->", self.get_simulation_day())
         print("Número de agentes ->", self.get_number_of_agents())
         
     #TODO: cambiar el diccionario agregando que revise la lista.
@@ -177,6 +175,15 @@ class Simulator:
                 else :
                     m+= self.world_dict['Nothing']
                 # m += self.world_dict[str(world.map[i][j])]
+            m += "\n"
+        print(m) 
+        
+    def print_footprints(self,world):
+        m = ""
+        for i in range(world.dimension_x):
+            for j in range(world.dimension_y):
+                val = len(world.map[i][j].footprints)
+                m += str(val) + "  " if val >= 0 else str(val) + " "
             m += "\n"
         print(m) 
         

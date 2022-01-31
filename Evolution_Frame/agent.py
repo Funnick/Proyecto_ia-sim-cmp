@@ -38,7 +38,6 @@ class Agent(object_base.Tile):
         self.current_energy = max_energy
         self.sex = 0
         self.age = 0
-        self.memory = [[],[],[]]
         self.genetic_code = gene.GeneticCode()
         self.energy_lost_fun = lambda sense, speed, size: (
             self.genetic_code.get_gene('sense').value + 
@@ -138,436 +137,138 @@ class Agent(object_base.Tile):
         agent = Agent(-1, -1, self.max_energy)
         agent.genetic_code = self.mutate()
         return agent
-
-    def get_random_move(self, perception):
-        """
-        Devuelve una acción que mueve al agente en una dirección.
-
-        :param perception: parte del mundo que es percibida por el agente
-        :type perception: World
-
-        :rtype: Action
-        :return: [moves[randint(0, len(moves) - 1)]]
-        """
-        global directions
-        global directions_actions
-        
-        moves = []
-
-        for i in range(4):
-            if perception.valid_cell_to_move(
-                self.perception_pos_x + directions[i][0],
-                self.perception_pos_y + directions[i][1],
-            ):
-                moves.append(directions_actions[i])
-
-        return [moves[randint(0, len(moves) - 1)]]
-
-    def make_plan(self, cell, pi, plan, dimension_y):
-        """
-        Devuelve una lista de acciones que consituye el plan del agente.
-
-        :param cell: última casilla vista en el BFS
-        :type cell: (int, int)
-        :param pi: arreglo pi del BFS
-        :type pi: (int, int) list
-        :param plan: lista de acciones que se debe tomar en la casilla i-ésima
-        :type plan: Action list
-        :param dimension_y: ancho del mundo para poder cambiar las dimensiones de pi y plan.
-        :type dimension_y: int
-
-        :rtype: Action list
-        :return: new_plan
-        """
-        new_plan = [plan[cell[0] * dimension_y + cell[1]]]
-        cell = pi[cell[0] * dimension_y + cell[1]]
-
-        while cell != -1:
-            new_plan.append(plan[cell[0] * dimension_y + cell[1]])
-            cell = pi[cell[0] * dimension_y + cell[1]]
-
-        return new_plan
-
-
-    def go_to_edge(self, perception):
-        """
-        Devuelve una lista de acciones que se deben realizar para conseguir llegar al borde.
-        En caso de no haber una acción clara en la percepción se devuelve una
-        acción de moverse aleatoria.
-
-        :param perception: parte del mundo que es percibida por el agente
-        :type perception: World
-
-        :rtype: Action list
-        """
-        
-        matrix = [
-            [False for i in range(perception.dimension_y)]
-            for j in range(perception.dimension_x)
-        ]
-        matrix[self.perception_pos_x][self.perception_pos_y] = True
-
-        pi = []
-        plan = []
-        for i in range(perception.dimension_x * perception.dimension_y):
-            pi.append(-1)
-            plan.append(action.DoNothing())
-
-        queue = [(self.perception_pos_x, self.perception_pos_y)]
-        while len(queue) > 0:
-            cell = queue.pop(0)
-            if perception.cell_is_edge(cell[0], cell[1]):
-                return self.make_plan(cell, pi, plan, perception.dimension_y)
-
-            for i in range(4):
-                new_cell = (cell[0] + directions[i][0], cell[1] + directions[i][1])
-
-                if (
-                    perception.valid_cell_to_move(new_cell[0], new_cell[1])
-                    and not matrix[new_cell[0]][new_cell[1]]
-                ):
-                    queue.append(new_cell)
-                    matrix[new_cell[0]][new_cell[1]] = True
-                    pi[new_cell[0] * perception.dimension_y + new_cell[1]] = cell
-                    plan[
-                        new_cell[0] * perception.dimension_y + new_cell[1]
-                    ] = directions_actions[i]
-
-        return self.get_random_move(perception)
     
-    def move(self, limits, start):
-        global adjacents
-        
-        # Create start and end node
-        start_node = Node(None, start)
-        end_node = Node(None, end)
-
-        # Initialize both open and closed list
-        open_list = []
-        closed_list = []
-
-        # Add the start node
-        open_list.append(start_node)
-
-        # Loop until you find the end
-        while len(open_list) > 0:
-
-            # Get the current node
-            current_node = open_list[0]
-            current_index = 0
-            for index, item in enumerate(open_list):
-                if item.f < current_node.f:
-                    current_node = item
-                    current_index = index
-
-            # Pop current off open list, add to closed list
-            open_list.pop(current_index)
-            closed_list.append(current_node)
-
-            # Found the goal
-            if current_node == end_node:
-                path = []
-                current = current_node
-                while current is not None:
-                    path.append(current.position)
-                    current = current.parent
-                return path[::-1] # Return reversed path
-
-            # Generate children
-            children = []
-            for new_position in adjacents: # Adjacent squares
-
-                # Get node position
-                node_position = (current_node.position[0] + new_position[0],
-                                 current_node.position[1] + new_position[1])
-
-                # Make sure within range
-                if (node_position[0] > (len(world) - 1) or
-                    node_position[0] < 0 or
-                    node_position[1] > (len(world[len(world)-1]) -1) or
-                    node_position[1] < 0):
-                    continue
-
-                # Make sure walkable terrain
-                if world[node_position[0]][node_position[1]] != 0:
-                    continue
-
-                # Create new node
-                new_node = Node(current_node, node_position)
-
-                # Append
-                children.append(new_node)
-
-            # Loop through children
-            for child in children:
-                # Child is on the closed list
-                for closed_child in closed_list:
-                    if child == closed_child:
-                        continue
-
-                # Tiempo en que fue visto
-                child.g = current_node.g + 1
-                
-                # Diferencia de elevación
-                d = -1 * abs(world[child.position[0]][child.position[1]].height -
-                                   world[child.parent.position[0]][child.parent.position[1]].height)
-                
-                # Cantidad de feromonas
-                p = len(world[child.position[0]][child.position[1]].pheromones)
-                
-                # Media de las distancias de manhattan con respecto a todas las comidas vistas
-                a = -1 * mean([manhattan([i.pos_x, i.pos_y], [child.position[0], child.position[1]])
-                                for i in self.memory[FOOD]])
-                
-                # Media de las distancias de manhattan con respecto a todos los enemigos vistos
-                e = -1 * mean([manhattan([i.pos_x, i.pos_y], [child.position[0], child.position[1]])
-                                for i in self.memory[ENEMIES]])
-                
-                # Media de las distancias de manhattan con respecto a todos los árboles vistos
-                t = -1 * mean([manhattan([i.pos_x, i.pos_y], [child.position[0], child.position[1]])
-                                for i in self.memory[TREES]])
-                
-                # Función heurística
-                child.h = d + a + e + t + p
-                
-                # Función de costo total
-                child.f = child.g + child.h
-
-                # Child is already in the open list
-                for open_node in open_list:
-                    if child == open_node and child.g > open_node.g:
-                        continue
-
-                # Add the child to the open list
-                open_list.append(child)
-    
-    def look_for_food(self, perception, foods, trees, enemies):
+    def in_limits(self, pos, perception):
         """
-        Devuelve una lista de acciones que se deben realizar para conseguir comida.
-        En caso de no haber una acción clara en la percepción se devuelve una
-        acción de moverse aleatoria.
+        Recibe una posición y verifica si se encuentra en los
+        límites establecidos.
+        
+        :param pos: coordenadas de la posición
+        :type pos: Tuple[int, int]
+        :param perception: coordenadas de los límites
+        :param perception: Tuple[int, int, int, int]
+        """
+        if (pos[0] >= perception[0] and
+            pos[0] <= perception[1] and
+            pos[1] >= perception[2] and
+            pos[1] <= perception[3]):
+            return True
+        else:
+            return False
+            
+    
+    def move(self, perception):
+        """
+        Retorna una lista de acciones que debe realizar el agente\n
+        para acercarce lo más posible a conseguir alimento y sobrevivir\n
+        en el día.
 
-        :param perception: parte del mundo que es percibida por el agente
-        :type perception: World
+        :param perception.Item1: Mundo en el que se encuentra el agente
+        :type perception.Item1: World
+        :param perception.Item2: Límites de visión del agente
+        :type perception.Item2: Tuple[int,int,int,int]
+        :param perception.Item3: Lista de alimentos vistos por el agente
+        :type perception.Item3: List
+        :param perception.Item4: Lista de árboles vistos por el agente
+        :type perception.Item4: List
+        :param perception.Item5: Lista de enemigos vistos por el agente
+        :type perception.Item5: List
 
         :rtype: Action list
         """
         global directions
         global directions_actions
+        if self.current_energy < self.energy_lost_fun(
+            self.genetic_code.get_gene('sense').value, 
+            self.genetic_code.get_gene('speed').value, 
+            self.genetic_code.get_gene('size').value):
+            return [action.DoNothing()]
+        
+        world = perception[0]
+        limits = perception[1]
+        foods = perception[2]
+        trees = perception[3]
+        enemies = perception[4]
         plan = []
+        path = []
 
         queue = [(self.pos_x, self.pos_y)]
         steps = 0
         max_steps = self.genetic_code.get_gene('speed').value
-        eats = 0
-        
+        current_food = 0
         while (steps < max_steps):
             cell = queue.pop(0)
-            best_move = [0,-1,None]
+            path.append(cell)
+            best_move = [10000,-1,None]
             for i in range(4):
                 new_cell = (cell[0] + directions[i][0], cell[1] + directions[i][1])
-                if perception.valid_cell_to_move(new_cell[0], new_cell[1]):
+                if (self.in_limits((new_cell[0], new_cell[1]), limits)):
                     
-                    if eats == 0:
+                    if (world.cell_is_edge(new_cell[0], new_cell[1]) and 
+                        self.food_eat_today == 0):
+                        continue
+                    if self.food_eat_today == 0:
                         eat_coeficent = 1
-                        tree_coeficent = 0.8
+                        tree_coeficent = 0.30
                         edge_coeficent = 0
-                    elif eats == 1:
-                        eat_coeficent = 0.5
-                        tree_coeficent = 0.25
-                        edge_coeficent = 0.5
+                    elif self.food_eat_today == 1:
+                        if self.current_energy < self.max_energy / 2:
+                            eat_coeficent = 0
+                            tree_coeficent = 0.10
+                            edge_coeficent = 1
+                        else: 
+                            eat_coeficent = 0.5
+                            tree_coeficent = 0.15
+                            edge_coeficent = 0.1
                     else:
                         eat_coeficent = 0
                         tree_coeficent = 0.10
                         edge_coeficent = 1
                         
-                    p = len(perception.map[new_cell[0]][new_cell[1]].pheronomes)/100
-                    f = - eat_coeficent * mean([manhattan([new_cell.pos_x, new_cell.pos_y], [i[0], i[1]])
+                    p = 0.1 * len(world.map[new_cell[0]][new_cell[1]].footprints)
+                    f = eat_coeficent * mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
                                 for i in foods])
-                    t = - tree_coeficent * mean([manhattan([new_cell.pos_x, new_cell.pos_y], [i[0], i[1]])
+                    t = tree_coeficent * mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
                                 for i in trees])
-                    e = mean([manhattan([new_cell.pos_x, new_cell.pos_y], [i[0], i[1]])
+                    e = mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
                                 for i in enemies])
-                    c = -1 * abs(perception.map[new_cell[0]][new_cell[1]].height -
-                                perception.map[cell[0]][cell[1]].height)
+                    c = -0.1 * abs(world.map[new_cell[0]][new_cell[1]].height -
+                                world.map[cell[0]][cell[1]].height)
+                    s = 10 if new_cell in path else 0
+                    edges = [abs(new_cell[0] - (world.dimension_x -1)),
+                             abs(new_cell[1] - (world.dimension_y -1)),
+                             new_cell[0], new_cell[1]]
+                    w = edge_coeficent * mean(edges)
                     
-                    total = p + f + t + e + c
+                    total = p + f + t + e + c + s + w
                     if total < best_move[0]:
                         best_move[0] = total
                         best_move[1] = i
                         best_move[2] = new_cell
                         
-                queue.append(best_move[1])
-                plan.append(directions_actions[best_move[i]])
-                if perception.map[new_cell[0]][new_cell[1]].have_food():
-                    plan.append(action.Eat())
-                
-                
-            if perception.cell_have_food(cell[0], cell[1], self):
-                return self.make_plan(cell, pi, plan, perception.dimension_y)
-
-        return self.get_random_move(perception)
-    
-    def look_for_food(self, perception):
-        """
-        Devuelve una lista de acciones que se deben realizar para conseguir comida.
-        En caso de no haber una acción clara en la percepción se devuelve una
-        acción de moverse aleatoria.
-
-        :param perception: parte del mundo que es percibida por el agente
-        :type perception: World
-
-        :rtype: Action list
-        """
-        global directions
-        global directions_actions
-        
-        matrix = [
-            [False for i in range(perception.dimension_y)]
-            for j in range(perception.dimension_x)
-        ]
-        matrix[self.perception_pos_x][self.perception_pos_y] = True
-        
-        pi = []
-        plan = []
-        for i in range(perception.dimension_x * perception.dimension_y):
-            pi.append(-1)
-            plan.append(action.Eat())
-
-        queue = [(self.perception_pos_x, self.perception_pos_y)]
-        while len(queue) > 0:
-            cell = queue.pop(0)
-            if perception.cell_have_food(cell[0], cell[1], self):
-                return self.make_plan(cell, pi, plan, perception.dimension_y)
-
-            for i in range(4):
-                new_cell = (cell[0] + directions[i][0], cell[1] + directions[i][1])
-
-                if (
-                    perception.valid_cell_to_move(new_cell[0], new_cell[1])
-                    and not matrix[new_cell[0]][new_cell[1]]
-                ):
-                    queue.append(new_cell)
-                    matrix[new_cell[0]][new_cell[1]] = True
-                    pi[new_cell[0] * perception.dimension_y + new_cell[1]] = cell
-                    plan[
-                        new_cell[0] * perception.dimension_y + new_cell[1]
-                    ] = directions_actions[i]
-
-        return self.get_random_move(perception)
-    
-
-    def go_to_edge(self, perception):
-        """
-        Devuelve una lista de acciones que se deben realizar para conseguir llegar al borde.
-        En caso de no haber una acción clara en la percepción se devuelve una
-        acción de moverse aleatoria.
-
-        :param perception: parte del mundo que es percibida por el agente
-        :type perception: World
-
-        :rtype: Action list
-        """
-        
-        matrix = [
-            [False for i in range(perception.dimension_y)]
-            for j in range(perception.dimension_x)
-        ]
-        matrix[self.perception_pos_x][self.perception_pos_y] = True
-
-        pi = []
-        plan = []
-        for i in range(perception.dimension_x * perception.dimension_y):
-            pi.append(-1)
-            plan.append(action.DoNothing())
-
-        queue = [(self.perception_pos_x, self.perception_pos_y)]
-        while len(queue) > 0:
-            cell = queue.pop(0)
-            if perception.cell_is_edge(cell[0], cell[1]):
-                return self.make_plan(cell, pi, plan, perception.dimension_y)
-
-            for i in range(4):
-                new_cell = (cell[0] + directions[i][0], cell[1] + directions[i][1])
-
-                if (
-                    perception.valid_cell_to_move(new_cell[0], new_cell[1])
-                    and not matrix[new_cell[0]][new_cell[1]]
-                ):
-                    queue.append(new_cell)
-                    matrix[new_cell[0]][new_cell[1]] = True
-                    pi[new_cell[0] * perception.dimension_y + new_cell[1]] = cell
-                    plan[
-                        new_cell[0] * perception.dimension_y + new_cell[1]
-                    ] = directions_actions[i]
-
-        return self.get_random_move(perception)
-
-    def play(self, perception):
-        """
-        Devuelve las acciones que se deben realizar para conseguir algún objetivo.
-
-        :param perception: parte del mundo que es percibida por el agente
-        :type perception: World
-
-        :rtype: Action
-        """
-        if not self.is_alive:
-            return []
-        if self.current_energy < self.energy_lost_fun(
-            self.genetic_code.get_gene('sense').value, 
-            self.genetic_code.get_gene('speed').value, 
-            self.genetic_code.get_gene('size').value
-        ):
-            return [action.DoNothing()]
-        if self.food_eat_today == 0 or (
-            self.food_eat_today == 1 and self.current_energy >= self.max_energy // 2
-        ):
-            l = self.look_for_food(perception)[: self.genetic_code.get_gene('speed').value]
-            return l
-        return self.go_to_edge(perception)[: self.genetic_code.get_gene('speed').value]
+            queue.append(best_move[2])
+            plan.append(directions_actions[best_move[1]])
+            if self.food_eat_today > 0 and world.map[best_move[2][0]][best_move[2][1]].is_edge:
+                plan.append(action.DoNothing())
+                break
+            if ((best_move[2][0],best_move[2][1]) in foods and 
+                self.food_eat_today + current_food <= 2):
+                current_food += 1
+                plan.append(action.Eat())
+                foods.remove(best_move[2])
+            steps += 1
+        return plan
     
     def see_around(self, world):
-        left_corner_x = max(0, self.pos_x - self.genetic_code.get_gene('sense').value)
-        left_corner_y = max(0, self.pos_y - self.genetic_code.get_gene('sense').value)
-        right_corner_x = min(self.pos_x + self.genetic_code.get_gene('sense').value,
-                             world.dimension_x - 1)
-        right_corner_y = min(self.pos_y + self.genetic_code.get_gene('sense').value,
-                             world.dimension_y - 1)
-
-        self.perception_pos_x = min(self.pos_x, self.genetic_code.get_gene('sense').value)
-        self.perception_pos_y = min(self.pos_y, self.genetic_code.get_gene('sense').value)
-        
-        foods = []
-        trees = []
-        enemies = []
-        
-        for i in range(left_corner_x, right_corner_x + 1):
-            for j in range(left_corner_y, right_corner_y + 1):
-                current_tile = world.map[i][j]
-                if current_tile.have_food():
-                    foods.append((i,j))
-                if current_tile.have_tree():
-                    trees.append((i,j))
-                if current_tile.have_agent():
-                    agent = current_tile.get_agent()
-                    if (agent.genetic_code.get_gene('size').value - 2 >=
-                        self.genetic_code.get_gene('size').value):
-                        enemies.append((i,j))
-                    else:
-                        foods.append((i,j))
-                        
-        return (left_corner_x, left_corner_y, right_corner_x, right_corner_y),foods,trees,enemies
-        
-        
-    def see(self, world):
         """
         Devuelve la percepción del mundo que tiene el agente.
-        La percepción es nuevo mundo, de tamaño dimension_x * dimension_y,
-        que es una copia de un lugar del mundo original. La parte que
-        es copiada es el cuadrado que tiene esquina superior izqueda
+        La percepción son los límites del campo de visión del agente,
+        de tamaño dimension_x * dimension_y. La parte que
+        es copiada es el cuadrado que tiene esquina superior izquierda
         (left_corner_x y left_corner_y) y esquina inferior derecha
-        (right_corner_x y right_corner_y).
+        (right_corner_x y right_corner_y). Además, hay listas de
+        elementos relevantes vistos por el agente, como comida, árboles y
+        enemigos.
 
         :param left_corner_x: coordenada x, esquina superior izquierda
         :type left_corner_x: int
@@ -577,64 +278,122 @@ class Agent(object_base.Tile):
         :type right_corner_x: int
         :param right_corner_y: coordenada y, esquina inferior derecha
         :type right_corner_y: int
-        :param dimension_x: largo de la copia
-        :type dimension_x: int
-        :param dimension_y: ancho de la copia
-        :type dimension_y: int
+        :param foods: coordenadas de las comidas vistas por el agente
+        :type foods: list
+        :param trees: coordenadas de los árboles vistos por el agente
+        :type trees: list
+        :param enemies: coordenadas de los enemigos vistos por el agente
+        :type enemies: list
 
         :rtype: World
-        :return: world.get_a_peek(
-            left_corner_x,
-            left_corner_y,
-            right_corner_x,
-            right_corner_y,
-            right_corner_x - left_corner_x + 1,
-            right_corner_y - left_corner_y + 1,
-        )
+        :return:(world, 
+                 (left_corner_x,
+                  right_corner_x,
+                  left_corner_y,
+                  right_corner_y),
+                 foods,
+                 trees,
+                 enemies)
         """
         left_corner_x = max(0, self.pos_x - self.genetic_code.get_gene('sense').value)
         left_corner_y = max(0, self.pos_y - self.genetic_code.get_gene('sense').value)
-        right_corner_x = min(self.pos_x + self.genetic_code.get_gene('sense').value, world.dimension_x - 1)
-        right_corner_y = min(self.pos_y + self.genetic_code.get_gene('sense').value, world.dimension_y - 1)
-
-        self.perception_pos_x = min(self.pos_x, self.genetic_code.get_gene('sense').value)
-        self.perception_pos_y = min(self.pos_y, self.genetic_code.get_gene('sense').value)
-
-        return world.get_a_peek(left_corner_x,
-                left_corner_y,
-                right_corner_x,
-                right_corner_y,
-                right_corner_x - left_corner_x + 1,
-                right_corner_y - left_corner_y + 1)
-
-#     def set_feromone(self, world):
-#         world.map[self.pos_x][self.pos_y].add_feromone(Pheromone())
+        right_corner_x = min(self.pos_x + self.genetic_code.get_gene('sense').value,
+                             world.dimension_x - 1)
+        right_corner_y = min(self.pos_y + self.genetic_code.get_gene('sense').value,
+                             world.dimension_y - 1)
+        foods = []
+        trees = []
+        enemies = []
         
-# class Pheromone:
-#     def __init__(self, value = 1):
-#         self.value = value
-#         self.time = 2
+        for i in range(left_corner_x, right_corner_x + 1):
+            for j in range(left_corner_y, right_corner_y + 1):
+                current_tile = world.map[i][j]
+                for element in current_tile.object_list:
+                    if isinstance(element, object_base.Food):
+                        foods.append((i,j))
+                    elif isinstance(element, object_base.Tree):
+                        trees.append((i,j))
+                    elif not(element is self) and isinstance(element, self.__class__):
+                        agent = element
+                        if (agent.genetic_code.get_gene('size').value - 2 >=
+                            self.genetic_code.get_gene('size').value):
+                            enemies.append((i,j))
+                        elif (self.genetic_code.get_gene('size').value - 2 >=
+                            agent.genetic_code.get_gene('size').value):
+                            foods.append((i,j))
+                        
+        return (world, 
+                (left_corner_x,
+                 right_corner_x,
+                 left_corner_y,
+                 right_corner_y),
+                foods,
+                trees,
+                enemies)
+
+    def set_footprint(self, world):
+        """
+        Método para ubicar una pisada del agente en una casilla
+        """
+        world.map[self.pos_x][self.pos_y].footprints.append(Footprint())
+        
+class Footprint:
+    """
+    Clase utilizada para describir la marca dejada por un agente
+    al pisar sobre una casilla.
+    """
+    def __init__(self, value = 1, time = 2):
+        """
+        :param value: valor de relevancia de la pisada
+        :type value: int
+        :param time: tiempo de duración de la pisada
+        :type time: int
+        
+        rtype: Footprint
+        """
+        self.value = value
+        self.time = 2
     
-    def evaporate(self):
-        self.time -= 1
+    def disappear(self):
+        """
+        Método para disminuir el tiempo de existencia
+        de una marca de pisada.
         
-class Node:
-    def __init__(self, parent=None, position=None):
-        self.parent = parent
-        self.position = position
-
-        self.g = 0
-        self.h = 0
-        self.f = 0
-
-    def __eq__(self, other):
-        return self.position == other.position
+        :rtype: None
+        """
+        self.time -= 1
     
 def mean(array):
-    t = 0
-    for e in array:
-        t = t + e
-    return t/len(array) if len(array) else 0
+    """
+    Función para calcular la media, dando relevancia a los
+    valores más pequeños.
+    
+    :param array: lista de elementos a hallarle la media
+    :type array: list
+    
+    :rtype: float
+    :return: mean
+    """
+    total = len(array)
+    sum_elem = 0
+    for elem in array:
+        sum_elem = sum_elem + 1/elem if elem != 0 else sum_elem + 1
+    mean = total/sum_elem if len(array) or sum_elem!=0 else 0
+    return mean
+
 
 def manhattan(pos1, pos2):
-    return int(abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1]))
+    """
+    Función para calcular la distancia manhattan entre
+    dos coordenas de una matriz
+    
+    :param pos1: primera coordenada
+    :type pos1: Tuple[int, int]
+    :param pos2: segunda coordenada
+    :type pos2: Tuple[int, int]
+    
+    :rtype: int
+    :return: distance
+    """
+    distance = int(abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1]))
+    return distance
