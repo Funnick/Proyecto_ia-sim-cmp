@@ -6,7 +6,12 @@ class Gene:
     Clase base de los genes
     """
 
-    def __init__(self, value, chance_to_mutate, chance_to_go_up):
+    def __init__(self,
+                 min_level, 
+                 max_level, 
+                 value, 
+                 chance_to_mutate, 
+                 chance_to_go_up):
         """
         Devuelve un nuevo gen. min_level (1) y max_level (10)
         representan los niveles mínimos y máximos en que puede mutar un gen
@@ -20,14 +25,14 @@ class Gene:
 
         :rtype: Gene
         """
-        self.min_level = 1
-        self.max_level = 10
+        self.min_level = min_level
+        self.max_level = max_level
         self.value = value
         self.chance_to_mutate = chance_to_mutate
         self.chance_to_go_up = chance_to_go_up
 
     def __add__(self, o):
-        return (self.value + o.value)/2
+        return int((self.value + o.value)/2)
 
     def mutate(self):
         """
@@ -36,12 +41,18 @@ class Gene:
         de un gen mutado su valor es +1 con probabilidad chance_to_go_up,
         -1 con el complemento de chance_to_go_up.
         """
+        new_value = self.value
         if random() <= self.chance_to_mutate:
             if random() > self.chance_to_go_up and self.value > self.min_level:
-                return Gene(self.value - 1, self.chance_to_mutate, self.chance_to_go_up)
+                new_value -= 1
             elif self.value < self.max_level:
-                return Gene(self.value + 1, self.chance_to_mutate, self.chance_to_go_up)
-        return Gene(self.value, self.chance_to_mutate, self.chance_to_go_up)
+                new_value += 1
+        new_gene = self.__class__(self.min_level, 
+                            self.max_level, 
+                            new_value, 
+                            self.chance_to_mutate, 
+                            self.chance_to_go_up)
+        return new_gene
     
 class Sense(Gene):
     """
@@ -54,13 +65,15 @@ class Sense(Gene):
                  value = 5,
                  chance_to_mutate = 0.5,
                  chance_to_go_up = 0.5):
-        Gene.__init__(self, value, chance_to_mutate, chance_to_go_up)
+        Gene.__init__(self, 
+                      min_level, 
+                      max_level, 
+                      value, 
+                      chance_to_mutate, 
+                      chance_to_go_up)
     
     def __str__(self):
         return 'sense'
-    
-    #def mutate(self):
-    #    NotImplemented
     
 class Size(Gene):
     """
@@ -72,13 +85,16 @@ class Size(Gene):
                  value = 5,
                  chance_to_mutate = 0.5,
                  chance_to_go_up = 0.5):
-        Gene.__init__(self, value, chance_to_mutate, chance_to_go_up)
+        Gene.__init__(self, 
+                      min_level, 
+                      max_level, 
+                      value, 
+                      chance_to_mutate, 
+                      chance_to_go_up)
     
     def __str__(self):
         return 'size'
     
-    #def mutate(self):
-    #    NotImplemented
     
 class Speed(Gene):
     """
@@ -91,13 +107,15 @@ class Speed(Gene):
                  value = 5,
                  chance_to_mutate = 0.5,
                  chance_to_go_up = 0.5):
-        Gene.__init__(self, value, chance_to_mutate, chance_to_go_up)
+        Gene.__init__(self, 
+                      min_level, 
+                      max_level, 
+                      value, 
+                      chance_to_mutate, 
+                      chance_to_go_up)
         
     def __str__(self):
         return 'speed'
-    
-    #def mutate(self):
-    #    NotImplemented
     
 class Reproduction(Gene):
     """
@@ -108,9 +126,14 @@ class Reproduction(Gene):
                  min_level = 1,
                  max_level =  2,
                  value = 1,
-                 chance_to_mutate = 0.01,
+                 chance_to_mutate = 0.1,
                  chance_to_go_up = 0.9):
-        Gene.__init__(self, value, chance_to_mutate, chance_to_go_up)
+        Gene.__init__(self, 
+                      min_level, 
+                      max_level, 
+                      value, 
+                      chance_to_mutate, 
+                      chance_to_go_up)
     
     def __str__(self):
         return 'reproduction'
@@ -125,11 +148,17 @@ class Reproduction(Gene):
         cambie a estado 2 (sexual). Si se encuentra en el estado 2, hay una muy
         pequeña posibilidad de que cambie al estado 1.
         """
+        new_value = self.value
         if random() <= self.chance_to_mutate:
             if self.value == 1 and self.chance_to_go_up < random():
-                self.value == 2
+                new_value = 2
             elif self.value == 2 and self.chance_to_go_up > random():
-                self.value = 1
+                new_value = 1
+        return Reproduction(self.min_level,
+                            self.max_level,
+                            new_value,
+                            self.chance_to_mutate,
+                            self.chance_to_go_up)
 class Life(Gene):
     """
     Gen que describe la duración de la vida de un
@@ -141,13 +170,15 @@ class Life(Gene):
                  value = 5,
                  chance_to_mutate = 0.5,
                  chance_to_go_up = 0.5):
-        Gene.__init__(self, value, chance_to_mutate, chance_to_go_up)
+        Gene.__init__(self, 
+                      min_level, 
+                      max_level, 
+                      value, 
+                      chance_to_mutate, 
+                      chance_to_go_up)
     
     def __str__(self):
         return 'life'
-    
-    #def mutate(self):
-    #    NotImplemented
     
 class Diet(Gene):
     """
@@ -158,15 +189,17 @@ class Diet(Gene):
                  min_level = 1,
                  max_level = 10,
                  value = 5,
-                 chance_to_mutate = 0.5,
-                 chance_to_go_up = 0.5):
-        Gene.__init__(self, value, chance_to_mutate, chance_to_go_up)
+                 chance_to_mutate = 0.8,
+                 chance_to_go_up = 0.8):
+        Gene.__init__(self, 
+                      min_level, 
+                      max_level, 
+                      value, 
+                      chance_to_mutate, 
+                      chance_to_go_up)
     
     def __str__(self):
         return 'diet'
-    
-    #def mutate(self):
-    #    NotImplemented
         
 class GeneticCode:
     """
@@ -181,8 +214,22 @@ class GeneticCode:
                  reproduction = Reproduction(),
                  life = Life()):
         """
-        Se inicializa una cadena genética con los genes
-        preestablecidos.
+        Se inicializa una cadena genética con un diccionario
+        donde irán los genes.
+        
+        :rtype: GeneticCode
+        """
+        self.build_chain()
+    
+    def build_chain(self,
+                    sense = Sense(),
+                    speed = Speed(),
+                    size = Size(),
+                    diet = Diet(),
+                    reproduction = Reproduction(),
+                    life = Life()):
+        """
+        Le agrega al código genético los genes preestablecidos.
         
         :param sense: gen de la visión  dentro de la cadena
         :type sense: Sense
@@ -197,22 +244,13 @@ class GeneticCode:
         :param life: gen de la espezanza de vida dentro de la cadena
         :type life: Life
         """
-        self.sense = sense
-        self.speed = speed
-        self.size = size
-        self.diet = diet
-        self.reproduction = reproduction
-        self.life = life
-        self.build_chain()
-    
-    def build_chain(self):
         self.chain = {
-            str(self.sense): self.sense,
-            str(self.speed): self.speed,
-            str(self.size): self.size,
-            str(self.diet): self.diet,
-            str(self.reproduction): self.reproduction,
-            str(self.life): self.life,
+            str(sense): sense,
+            str(speed): speed,
+            str(size): size,
+            str(diet): diet,
+            str(reproduction): reproduction,
+            str(life): life,
         }
         
     def __add__(self, other):
@@ -224,15 +262,17 @@ class GeneticCode:
         :type other: GeneticCode
         
         :rtype: GeneticCode
-        :return: new_chain
+        :return: new_genetic_code
         """
+        new_genetic_code = GeneticCode()
         new_chain = {}
         for gene in self.chain.keys():
             if random() < 0.5:
-                new_chain[g] = self.chain[g]
+                new_chain[gene] = self.chain[gene]
             else:
-                new_chain[g] = other.chain[g]
-        return new_chain
+                new_chain[gene] = other.chain[gene]
+        new_genetic_code.chain = new_chain
+        return new_genetic_code
     
     def add_gene(self, gene):
         """

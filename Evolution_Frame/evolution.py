@@ -82,6 +82,7 @@ class Simulator:
                     all_do_nothing_actions = False
                 else:
                     self.active_agents.remove(ag)
+            ag.reduce_energy_to_perform_an_action()
 
         return all_do_nothing_actions
 
@@ -100,15 +101,19 @@ class Simulator:
                 self.world.remove_agent(self.agents[i])
                 self.agents.pop(i)
 
-    def replicate_agents(self):
+    def reproduction_agents(self):
         """
         Reproduce los agentes que cumplieron la condición de reproducción.
 
         :rtype: None
         """
         for ag in self.agents:
-            if ag.food_eat_today == 2:
-                self.add_agent_to_simulation(ag.asexual_reproduction(),(ag.pos_x,ag.pos_y))
+            if ag.food_eat_today >= 2:
+                reproduction = ag.genetic_code.get_gene('reproduction').value
+                if reproduction == 1:
+                    self.add_agent_to_simulation(ag.asexual_reproduction(),(ag.pos_x,ag.pos_y))
+                elif reproduction == 2 and ag.pregnant:
+                    self.add_agent_to_simulation(ag.pregnant,(ag.pos_x,ag.pos_y))
 
     def reset_agents_attributes(self):
         """
@@ -117,6 +122,7 @@ class Simulator:
         for ag in self.agents:
             ag.food_eat_today = 0
             ag.current_energy = ag.max_energy
+            ag.pregnant = None
 
     def clean_map(self):
         """
@@ -142,7 +148,7 @@ class Simulator:
         
         self.eliminate_poorly_positioned_hungry_agents()
         self.clean_map()
-        self.replicate_agents()
+        self.reproduction_agents()
         self.reset_agents_attributes()
         
 

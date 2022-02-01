@@ -252,22 +252,19 @@ class World:
         :type couple_x: int
         :param couple_y: coordenada y de la casilla
         :type couple_y: int
+        :param agent: agente que va a realizar la reproducción
+        :type agent: Agent
 
         :rtype: bool
         :return: True || False
         """
-        for c in self.map[food_pos_x][food_pos_y].object_list:
-            if isinstance(c, Food):
-                return True, True, c
-            if (
-                c.__class__ == agent.__class__
-                and (agent.genetic_code.get_gene('size').value - 2 >=
-                     c.genetic_code.get_gene('size').value)
+        for c in self.map[couple_x][couple_y].object_list:
+            if (c.__class__ == agent.__class__
+                and (c.genetic_code.get_gene('reproduction').value == 2)
                 and c.is_alive
-            ):
-                return True, False, c
-
-        return False, False, None
+                and not agent.pregnant):
+                return True, c
+        return False, None
 
     def get_pos_random_edge(self):
         """

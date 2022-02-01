@@ -39,7 +39,7 @@ class Agent(Object_base):
         self.age = 0
         self.genetic_code = gene.GeneticCode()
         self.energy_lost_fun = lambda sense, speed, size: (
-            self.genetic_code.get_gene('sense').value +
+            self.genetic_code.get_gene('sense').value *
             self.genetic_code.get_gene('speed').value + 
             self.genetic_code.get_gene('size').value)
 
@@ -51,10 +51,64 @@ class Agent(Object_base):
             self.genetic_code
         
     def sexual_reproduction(self, other_agent):
-        son_max_energy = (self.max_energy + other_agent.max_energy)/2
-        son_agent = Agent(-1, -1, son_max_energy)
-        son_agent.genetic_code = self.genetic_code + other_agent.genetic_code
-        return son_agent
+        """
+        Realiza la reproducción sexual entre dos agentes,
+        combinando su genética.
+        
+        :param other_agent: agente con el cual se realizará la reproducción
+        :type other_agent: Agent
+        
+        :rtype: Agent
+        :return: child_agent
+        """
+        child_max_energy = (self.max_energy + other_agent.max_energy)/2
+        child_agent = Agent(-1, -1, child_max_energy)
+        child_agent.genetic_code = self.genetic_code + other_agent.genetic_code
+        return child_agent
+    
+    def asexual_reproduction(self):
+        """
+        Devuelve un nuevo agente que puede tener características mutadas,
+        es el resultado de una reproducción asexual.
+
+        :rtype: Agent
+        :return: child_agent
+        """
+        child_agent = Agent(-1, -1, self.max_energy)
+        child_agent.genetic_code = self.mutate()
+        return child_agent
+    
+    def add_gene(self, gene):
+        """
+        Agrega un gen al agente.
+        :param gene: gen que se va a agregar
+
+        :rtype: None
+        """
+        self.genetic_code.add_gene(gene)
+        
+    def have_gene(self, gene):
+        """
+        Comprueba si el agente posee un gen.
+        :param gene: gen a comprobar si el agente lo posee
+
+        :rtype: bool
+        ::return: True || False
+        """
+        if self.genetic_code.have_gene(gene):
+            return True
+        else:
+            return False
+        
+    def mutate(self):
+        """
+        Hace mutar todos los genes que posee el agente.
+
+        :rtype: GeneticCode
+        :return: child_genetic_code
+        """
+        child_genetic_code = self.genetic_code.mutate()
+        return child_genetic_code
     
     def get_older(self):
         """
@@ -68,39 +122,7 @@ class Agent(Object_base):
         if self.life_span == self.age:
             self.is_alive = False
         return self.age
-    
-    def add_gene(self, gene):
-        """
-        Agrega un gen al agente.
-        :param gene: gen que se va a agregar
-
-        :rtype: None
-        """
-        self.genetic_code.add_gene(gene)
-    
-    def have_gene(self, gene):
-        """
-        Comprueba si el agente posee un gen.
-        :param gene: gen a comprobar si el agente lo posee
-
-        :rtype: bool
-        ::return: True || False
-        """
-        if self.genetic_code.have_gene(gene):
-            return True
-        else:
-            return False
-    
-    def mutate(self):
-        """
-        Hace mutar todos los genes que posee el agente.
-
-        :rtype: GeneticCode
-        :return: child_genetic_code
-        """
-        child_genetic_code = self.genetic_code.mutate()
-        return child_genetic_code
-    
+       
     def reduce_energy_to_perform_an_action(self):
         """
         Devuelve verdadero en caso de que se pueda consumir energía
@@ -118,18 +140,6 @@ class Agent(Object_base):
             self.current_energy = self.current_energy - elf
             return True
         return False
-
-    def asexual_reproduction(self):
-        """
-        Devuelve un nuevo agente que puede tener características mutadas,
-        es el resultado de una reproducción asexual.
-
-        :rtype: Agent
-        :return: agent
-        """
-        agent = Agent(-1, -1, self.max_energy)
-        agent.genetic_code = self.mutate()
-        return agent
     
     def in_limits(self, pos, perception):
         """
@@ -218,6 +228,8 @@ class Agent(Object_base):
                 tree_coeficent = 0.10
                 edge_coeficent = 1
                 sex_coeficent = 0.2
+            if self.pregnant:
+                sex_coeficent = 0
             # --------------------------------------------
             for i in range(4):
                 new_cell = (cell[0] + directions[i][0], cell[1] + directions[i][1])
@@ -268,6 +280,8 @@ class Agent(Object_base):
                         
             queue.append(best_move[2])
             plan.append(directions_actions[best_move[1]])
+            if not self.pregnant and (best_move[2][0],best_move[2][1]) in couples:
+                plan.append(action.HaveSex())
             if self.food_eat_today > 0 and world.map[best_move[2][0]][best_move[2][1]].is_edge:
                 plan.append(action.DoNothing())
                 break
@@ -347,7 +361,7 @@ class Agent(Object_base):
                             foods.append((i,j))
                         elif (self.genetic_code.get_gene('reproduction').value == 2 and
                             agent.genetic_code.get_gene('reproduction').value == 2): 
-                            reproduction.append((i,j))
+                            couples.append((i,j))
                         
         return (world,
                 (left_corner_x,
@@ -408,7 +422,6 @@ def mean(array):
         sum_elem = sum_elem + 1/elem if elem != 0 else sum_elem + 1
     mean = total/sum_elem if len(array) or sum_elem!=0 else 0
     return mean
-
 
 def manhattan(pos1, pos2):
     """

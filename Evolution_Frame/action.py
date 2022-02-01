@@ -14,8 +14,7 @@ class Action:
 
         :rtype: None
         """
-        if agent.reduce_energy_to_perform_an_action():
-            self.aux_execute(world, agent)
+        self.aux_execute(world, agent)
 
     def aux_execute(self, world, agent):
         pass
@@ -98,14 +97,7 @@ class HaveSex(Action):
     """
     Mueve al agente en dirección oeste
     """
-
     def aux_execute(self, world, agent):
-        agent_eat, _type, food = world.agent_eat_food(agent.pos_x, agent.pos_y, agent)
-        if agent_eat:
-            agent.food_eat_today = agent.food_eat_today + 1
-            if _type:
-                world.map[agent.pos_x][ agent.pos_y].object_list.remove(food)
-                if not world.cell_have_food(agent.pos_x,  agent.pos_y):
-                    world.map[agent.pos_x][ agent.pos_y].has_food = False
-            else:
-                food.is_alive = False
+        agent_have_sex, other_agent = world.agents_have_sex(agent.pos_x, agent.pos_y, agent)
+        if agent_have_sex:
+            agent.pregnant = agent.sexual_reproduction(other_agent)
