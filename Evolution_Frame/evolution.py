@@ -1,5 +1,4 @@
-import world
-import agent
+from world import World
 from action import DoNothing
 from random import shuffle
 
@@ -23,8 +22,6 @@ class Simulator:
         self.day = 0
         self.cycle = 0
 
-    
-    
     def create_world(self, dimension_x, dimension_y, trees = 0):
         """
         Inicializa el mundo de la simulación con tamaño dimension_x * dimension_y.
@@ -36,7 +33,7 @@ class Simulator:
 
         :rtype: None
         """
-        self.world = world.World(dimension_x, dimension_y, trees)
+        self.world = World(dimension_x, dimension_y, trees)
 
     def add_restrictions(self, func):
         """
@@ -48,7 +45,7 @@ class Simulator:
         :rtype: None
         """
         self.restrictions = func
-    
+
     def add_agent_to_simulation(self, agent, pos = (-1,-1)):
         """
         Añade un nuevo agente a la simulación.
@@ -66,6 +63,19 @@ class Simulator:
         self.agents.append(agent)
         self.world.add_agent(r, c, agent)
 
+    def add_agents_to_simulation(self, agents):
+        """
+        Añade a partir de una lista un grupo de agentes a la
+        simulación.
+        
+        :param agents: lista de agentes
+        :type agents: list
+        
+        :rtype: None
+        """
+        for agent in agents:
+            self.add_agent_to_simulation(agent)
+    
     def simulate_one_agent_action(self):
         """
         Ejecuta una acción por cada agente.
@@ -76,13 +86,15 @@ class Simulator:
         all_do_nothing_actions = True
         shuffle(self.active_agents)
         for ag in self.active_agents:
-            for act in ag.move(ag.see_around(self.world)):
-                if not (act.__class__ is DoNothing):
-                    act.execute(self.world, ag)
-                    all_do_nothing_actions = False
-                else:
-                    self.active_agents.remove(ag)
-            ag.reduce_energy_to_perform_an_action()
+            if ag.is_alive:
+                for act in ag.move(ag.see_around(self.world)):
+                    if not (act.__class__ is DoNothing):
+                        act.execute(self.world, ag)
+                        all_do_nothing_actions = False
+                    else:
+                        self.active_agents.remove(ag)
+            else:
+                self.active_agents.remove(ag)
 
         return all_do_nothing_actions
 
@@ -120,6 +132,7 @@ class Simulator:
         Reinicia los atributos de todos los agentes de la simulación
         """
         for ag in self.agents:
+            ag.get_older()
             ag.food_eat_today = 0
             ag.current_energy = ag.max_energy
             ag.pregnant = None
@@ -142,7 +155,7 @@ class Simulator:
         :rtype: None
         """
         self.day = self.day + 1
-        self.active_agents = [a for a in self.agents]
+        self.active_agents = [a for a in self.agents if a.is_alive]
         while not self.simulate_one_agent_action():
             pass
         
@@ -151,6 +164,20 @@ class Simulator:
         self.reproduction_agents()
         self.reset_agents_attributes()
         
+    def get_agents_that(self, func):
+        """
+        Retorna los agentes que cumplen con cierto predicado.
+        :param func: Función que devuelve True or False
+        :type func: Func
+        
+        :rtype: list
+        :return: agents_list
+        """
+        agents_list = []
+        for ag in self.agents:
+            if ag.is_alive and func(ag):
+                agents_list.append(ag)
+        return agents_list
 
     def get_simulation_day(self):
         """
@@ -175,11 +202,13 @@ class Simulator:
         :return: len(self.agents)
         """
         return len(self.agents)
-
+    
     def get_statistics(self):
         print("Día ->", self.get_simulation_day())
         print("Número de agentes ->", self.get_number_of_agents())
-        
+    
+    def get_species(self):
+        pass   
     #TODO: cambiar el diccionario agregando que revise la lista.
     def print_world(self,world):
         m = ""

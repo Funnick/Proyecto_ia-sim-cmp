@@ -1,5 +1,5 @@
 from object_base import *
-import perlin
+from perlin import *
 from random import randint, random
 
 
@@ -24,7 +24,7 @@ class World:
         self.dimension_x = dimension_x
         self.dimension_y = dimension_y
         self.map = []
-        elevation = perlin.generate_elevation_matrix(dimension_x,dimension_y)
+        elevation = generate_elevation_matrix(dimension_x,dimension_y)
         self.init_map(dimension_x, dimension_y, elevation)
         self.trees = []
         self.add_tree(trees)
@@ -108,8 +108,7 @@ class World:
                 tries += 1
                     
         return used
-        
-    
+          
     def add_food(self, food_amount):
         """
         Añade comida al mundo. No añade comida en los bordes.\n
@@ -196,8 +195,7 @@ class World:
         :return: True || False
         """
         return self.map[pos_x][pos_y].has_tree
-    
-      
+        
     def move_agent(self, agent, new_pos_x, new_pos_y):
         """
         Reubica un agente en el mapa a la casilla (new_pos_x, new_pos_y)
@@ -211,6 +209,8 @@ class World:
 
         :rtype: None
         """
+        diff =  abs(self.map[new_pos_x][new_pos_y].height - self.map[agent.pos_x][agent.pos_y].height)
+        agent.reduce_energy_to_perform_an_action(diff)
         self.map[new_pos_x][new_pos_y].object_list.append(agent)
         self.map[new_pos_x][new_pos_y].has_agent = True
         self.map[agent.pos_x][agent.pos_y].object_list.remove(agent)
@@ -230,9 +230,10 @@ class World:
         :return: True || False
         """
         for c in self.map[food_pos_x][food_pos_y].object_list:
-            if isinstance(c, Food):
+            diet = agent.genetic_code.get_gene('diet').value
+            if isinstance(c, Food) and (diet == 1 or diet == 3):
                 return True, True, c
-            if (
+            if (diet > 1 and
                 c.__class__ == agent.__class__
                 and (agent.genetic_code.get_gene('size').value - 2 >=
                      c.genetic_code.get_gene('size').value)
@@ -262,7 +263,9 @@ class World:
             if (c.__class__ == agent.__class__
                 and (c.genetic_code.get_gene('reproduction').value == 2)
                 and c.is_alive
-                and not agent.pregnant):
+                and not agent.pregnant 
+                and (agent.genetic_code.get_gene('sex').value !=
+                     c.genetic_code.get_gene('sex').value)):
                 return True, c
         return False, None
 

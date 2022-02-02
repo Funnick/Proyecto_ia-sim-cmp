@@ -1,22 +1,21 @@
 from object_base import *
-import gene
-import action
+from action import *
 from random import randint
-from math import sqrt
+from gene import GeneticCode
 
 directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 directions_actions = [
-    action.MoveNorth(),
-    action.MoveSouth(),
-    action.MoveWest(),
-    action.MoveEast()
+    MoveNorth(),
+    MoveSouth(),
+    MoveWest(),
+    MoveEast()
 ]
 class Agent(Object_base):
     """
-    Clase que reprenseta a los agentes de la simulación.
+    Clase que reprensenta a los agentes de la simulación.
     """
 
-    def __init__(self, pos_x, pos_y, max_energy = 100):
+    def __init__(self, pos_x = -1, pos_y = -1, genes = []):
         """
         Inicializa un agente en la posición (pos_x, pos_y) con una energía máxima (max_energy).
 
@@ -24,69 +23,49 @@ class Agent(Object_base):
         :type pos_x: int
         :param pos_y: coordenada y del agente
         :type pos_y: int
-        :param max_energy: energía máxima del agente
-        :type max_energy: int
+        :param genes: lista de genes que serán pasados al agente
 
         :rtype: Agent
         """
         Object_base.__init__(self, pos_x, pos_y)
         self.is_alive = True
         self.food_eat_today = 0
-        self.max_energy = max_energy
-        self.current_energy = max_energy
-        self.life_span = 10
         self.pregnant = False
         self.age = 0
-        self.genetic_code = gene.GeneticCode()
+        self.set_genetic()
+        self.max_energy = self.genetic_code.get_gene('stamina').value
+        self.current_energy = self.max_energy
+        self.life_span = self.genetic_code.get_gene('life').value
         self.energy_lost_fun = lambda sense, speed, size: (
-            self.genetic_code.get_gene('sense').value *
+            self.genetic_code.get_gene('sense').value +
             self.genetic_code.get_gene('speed').value + 
             self.genetic_code.get_gene('size').value)
 
     def __str__(self):
         return "Agent"
 
-    def set_random_genetic(self):
-        for gene in range(randint(3)):
-            self.genetic_code
-        
-    def sexual_reproduction(self, other_agent):
+    # Genética -------------------------------------------------------------
+    def set_genetic(self, genes = []):
         """
-        Realiza la reproducción sexual entre dos agentes,
-        combinando su genética.
+        Agrega un código genético al agente con los valores predeterminados,
+        o genes diseñados por el usuario.
         
-        :param other_agent: agente con el cual se realizará la reproducción
-        :type other_agent: Agent
-        
-        :rtype: Agent
-        :return: child_agent
+        :rtype: None
         """
-        child_max_energy = (self.max_energy + other_agent.max_energy)/2
-        child_agent = Agent(-1, -1, child_max_energy)
-        child_agent.genetic_code = self.genetic_code + other_agent.genetic_code
-        return child_agent
+        genetic = GeneticCode(genes = genes)
+        self.genetic_code = genetic
     
-    def asexual_reproduction(self):
+    def set_gen(self, gene):
         """
-        Devuelve un nuevo agente que puede tener características mutadas,
-        es el resultado de una reproducción asexual.
-
-        :rtype: Agent
-        :return: child_agent
-        """
-        child_agent = Agent(-1, -1, self.max_energy)
-        child_agent.genetic_code = self.mutate()
-        return child_agent
-    
-    def add_gene(self, gene):
-        """
-        Agrega un gen al agente.
-        :param gene: gen que se va a agregar
-
+        Sustituye un gen del agente por otro del mismo tipo.
+        
+        :param gene: nuevo gen que reemplazará al anterior.
+        :type gene: Gene
+        
         :rtype: None
         """
         self.genetic_code.add_gene(gene)
-        
+    
     def have_gene(self, gene):
         """
         Comprueba si el agente posee un gen.
@@ -100,6 +79,33 @@ class Agent(Object_base):
         else:
             return False
         
+    def sexual_reproduction(self, other_agent):
+        """
+        Realiza la reproducción sexual entre dos agentes,
+        combinando su genética.
+        
+        :param other_agent: agente con el cual se realizará la reproducción
+        :type other_agent: Agent
+        
+        :rtype: Agent
+        :return: child_agent
+        """
+        child_agent = Agent(-1, -1)
+        child_agent.genetic_code = self.genetic_code + other_agent.genetic_code
+        return child_agent
+    
+    def asexual_reproduction(self):
+        """
+        Devuelve un nuevo agente que puede tener características mutadas,
+        es el resultado de una reproducción asexual.
+
+        :rtype: Agent
+        :return: child_agent
+        """
+        child_agent = Agent(-1, -1)
+        child_agent.genetic_code = self.mutate()
+        return child_agent
+    
     def mutate(self):
         """
         Hace mutar todos los genes que posee el agente.
@@ -107,8 +113,9 @@ class Agent(Object_base):
         :rtype: GeneticCode
         :return: child_genetic_code
         """
-        child_genetic_code = self.genetic_code.mutate()
+        child_genetic_code = self.genetic_code.mutate
         return child_genetic_code
+    # -----------------------------------------------------------------------
     
     def get_older(self):
         """
@@ -123,7 +130,7 @@ class Agent(Object_base):
             self.is_alive = False
         return self.age
        
-    def reduce_energy_to_perform_an_action(self):
+    def reduce_energy_to_perform_an_action(self, coeficent = 0):
         """
         Devuelve verdadero en caso de que se pueda consumir energía
         para realizar una acción, falso en otro caso.
@@ -135,7 +142,7 @@ class Agent(Object_base):
             self.genetic_code.get_gene('sense').value,
             self.genetic_code.get_gene('speed').value,
             self.genetic_code.get_gene('size').value
-        )
+        ) + coeficent
         if self.current_energy >= elf:
             self.current_energy = self.current_energy - elf
             return True
@@ -186,7 +193,7 @@ class Agent(Object_base):
             self.genetic_code.get_gene('sense').value, 
             self.genetic_code.get_gene('speed').value, 
             self.genetic_code.get_gene('size').value):
-            return [action.DoNothing()]
+            return [DoNothing()]
         
         world = perception[0]
         limits = perception[1]
@@ -211,13 +218,13 @@ class Agent(Object_base):
                 eat_coeficent = 1
                 tree_coeficent = 0.30
                 edge_coeficent = 0
-                sex_coeficent = 0.10
+                sex_coeficent = 0.20
             elif self.food_eat_today == 1:
                 if self.current_energy < self.max_energy / 2:
                     eat_coeficent = 0
                     tree_coeficent = 0.10
                     edge_coeficent = 1
-                    sex_coeficent = 0.2
+                    sex_coeficent = 0.10
                 else: 
                     eat_coeficent = 0.5
                     tree_coeficent = 0.15
@@ -227,10 +234,11 @@ class Agent(Object_base):
                 eat_coeficent = 0
                 tree_coeficent = 0.10
                 edge_coeficent = 1
-                sex_coeficent = 0.2
+                sex_coeficent = 0.30
             if self.pregnant:
                 sex_coeficent = 0
             # --------------------------------------------
+            
             for i in range(4):
                 new_cell = (cell[0] + directions[i][0], cell[1] + directions[i][1])
                 if (self.in_limits((new_cell[0], new_cell[1]), limits)):
@@ -280,15 +288,16 @@ class Agent(Object_base):
                         
             queue.append(best_move[2])
             plan.append(directions_actions[best_move[1]])
-            if not self.pregnant and (best_move[2][0],best_move[2][1]) in couples:
-                plan.append(action.HaveSex())
             if self.food_eat_today > 0 and world.map[best_move[2][0]][best_move[2][1]].is_edge:
-                plan.append(action.DoNothing())
+                plan.append(DoNothing())
                 break
+            if not self.pregnant and (best_move[2][0], best_move[2][1]) in couples:
+                plan.append(HaveSex())
+                couples.remove(best_move[2])
             if ((best_move[2][0],best_move[2][1]) in foods and 
                 self.food_eat_today + current_food <= 2):
                 current_food += 1
-                plan.append(action.Eat())
+                plan.append(Eat())
                 foods.remove(best_move[2])
             steps += 1
         return plan
@@ -301,8 +310,8 @@ class Agent(Object_base):
         es copiada es el cuadrado que tiene esquina superior izquierda
         (left_corner_x y left_corner_y) y esquina inferior derecha
         (right_corner_x y right_corner_y). Además, hay listas de
-        elementos relevantes vistos por el agente, como comida, árboles y
-        enemigos.
+        elementos relevantes vistos por el agente, como comida, árboles,
+        enemigos y posibles parejas.
 
         :param left_corner_x: coordenada x, esquina superior izquierda
         :type left_corner_x: int
@@ -343,24 +352,37 @@ class Agent(Object_base):
         enemies = []
         couples = []
         
+        # Propiedades genéticas propias ------------------------------
+        self_diet = self.genetic_code.get_gene('diet').value
+        self_sex = self.genetic_code.get_gene('sex').value
+        self_size = self.genetic_code.get_gene('size').value
+        self_repr = self.genetic_code.get_gene('reproduction').value
+        # -------------------------------------------------------------
+        
         for i in range(left_corner_x, right_corner_x + 1):
             for j in range(left_corner_y, right_corner_y + 1):
                 current_tile = world.map[i][j]
                 for element in current_tile.object_list:
-                    if isinstance(element, Food):
+                    if (isinstance(element, Food) and
+                        (self_diet == 1 or self_diet == 3)):
                         foods.append((i,j))
-                    elif isinstance(element, Tree):
+                    elif (isinstance(element, Tree) and
+                        (self_diet == 1 or self_diet == 3)):
                         trees.append((i,j))
                     elif not(element is self) and isinstance(element, self.__class__):
-                        agent = element
-                        if (agent.genetic_code.get_gene('size').value - 2 >=
-                            self.genetic_code.get_gene('size').value):
+                        
+                        # Propiedades genéticas del otro agente -----------------------
+                        other_diet = element.genetic_code.get_gene('diet').value
+                        other_sex = element.genetic_code.get_gene('sex').value
+                        other_size = element.genetic_code.get_gene('size').value
+                        other_repr = element.genetic_code.get_gene('reproduction').value
+                        # --------------------------------------------------------------
+                        
+                        if (other_size - 2 >= self_size and other_diet > 1):
                             enemies.append((i,j))
-                        elif (self.genetic_code.get_gene('size').value - 2 >=
-                            agent.genetic_code.get_gene('size').value):
+                        elif (self_size - 2 >= other_size and self_diet > 1):
                             foods.append((i,j))
-                        elif (self.genetic_code.get_gene('reproduction').value == 2 and
-                            agent.genetic_code.get_gene('reproduction').value == 2): 
+                        elif (self_repr == 2 and other_repr == 2 and other_sex != self_sex): 
                             couples.append((i,j))
                         
         return (world,
@@ -377,7 +399,9 @@ class Agent(Object_base):
         """
         Método para ubicar una pisada del agente en una casilla
         """
-        world.map[self.pos_x][self.pos_y].footprints.append(Footprint())
+        tile = world.map[self.pos_x][self.pos_y]
+        if not tile.is_edge:
+            tile.footprints.append(Footprint())
         
 class Footprint:
     """
@@ -404,7 +428,8 @@ class Footprint:
         :rtype: None
         """
         self.time -= 1
-    
+
+# Funciones auxiliares -----------------------------------
 def mean(array):
     """
     Función para calcular la media, dando relevancia a los
@@ -438,3 +463,4 @@ def manhattan(pos1, pos2):
     """
     distance = int(abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1]))
     return distance
+# --------------------------------------------------------

@@ -19,7 +19,6 @@ class Action:
     def aux_execute(self, world, agent):
         pass
 
-
 class DoNothing(Action):
     """
     Acción de no hacer nada
@@ -27,7 +26,6 @@ class DoNothing(Action):
 
     def execute(self, world, agent):
         pass
-
 
 class MoveNorth(Action):
     """
@@ -39,7 +37,6 @@ class MoveNorth(Action):
         agent.pos_x = agent.pos_x - 1
         agent.set_footprint(world)
 
-
 class MoveSouth(Action):
     """
     Mueve al agente en dirección sur
@@ -49,7 +46,6 @@ class MoveSouth(Action):
         world.move_agent(agent, agent.pos_x + 1, agent.pos_y)
         agent.pos_x = agent.pos_x + 1
         agent.set_footprint(world)
-
 
 class MoveEast(Action):
     """
@@ -61,7 +57,6 @@ class MoveEast(Action):
         agent.pos_y = agent.pos_y + 1
         agent.set_footprint(world)
 
-
 class MoveWest(Action):
     """
     Mueve al agente en dirección oeste
@@ -71,7 +66,6 @@ class MoveWest(Action):
         world.move_agent(agent, agent.pos_x, agent.pos_y - 1)
         agent.pos_y = agent.pos_y - 1
         agent.set_footprint(world)
-
 
 class Eat(Action):
     """
@@ -88,6 +82,7 @@ class Eat(Action):
                     world.map[agent.pos_x][ agent.pos_y].has_food = False
             else:
                 food.is_alive = False
+                agent.food_eat_today = agent.food_eat_today + 1
                 
 
     def __str__(self):
@@ -95,7 +90,7 @@ class Eat(Action):
 
 class HaveSex(Action):
     """
-    Mueve al agente en dirección oeste
+    Hace que el agente practique sexo con otro agente
     """
     def aux_execute(self, world, agent):
         agent_have_sex, other_agent = world.agents_have_sex(agent.pos_x, agent.pos_y, agent)
