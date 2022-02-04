@@ -216,12 +216,11 @@ class Diet(Gene):
     def __init__(self,
                  min_level = 1,
                  max_level = 3,
-                 value = 0,
-                 chance_to_mutate = 0.05,
+                 value = 1,
+                 chance_to_mutate = 0.1,
                  chance_to_go_up = 0.8,
                  step = 1):
-        if not value:
-            value = randint(min_level, max_level)
+        
         Gene.__init__(self, 
                       min_level, 
                       max_level, 
@@ -274,10 +273,11 @@ class Sex(Gene):
                  chance_to_mutate = 1,
                  chance_to_go_up = 0,
                  step = 1):
+        value = randint(1, 2)
         Gene.__init__(self, 
                       min_level, 
                       max_level, 
-                      randint(min_level, max_level), 
+                      value, 
                       chance_to_mutate, 
                       chance_to_go_up,
                       step)
@@ -294,6 +294,30 @@ class Sex(Gene):
         :return: Sex()
         """
         return Sex()
+   
+   
+class Fertility(Gene):
+    """
+    Gen que describe la capacidad del agente parir
+    uno o más hijos.
+    """
+    def __init__(self,
+                 min_level = 1,
+                 max_level = 8,
+                 value = 4,
+                 chance_to_mutate = 0.5,
+                 chance_to_go_up = 0.5,
+                 step = 1):
+        Gene.__init__(self, 
+                      min_level, 
+                      max_level, 
+                      value, 
+                      chance_to_mutate, 
+                      chance_to_go_up,
+                      step)
+    
+    def __str__(self):
+        return 'fertility'
              
 class Stamina(Gene):
     """
@@ -318,6 +342,7 @@ class Stamina(Gene):
     def __str__(self):
         return 'stamina'  
     
+    
 class GeneticCode:
     """
     Clase dedicada a describir una cadena de genes, o
@@ -335,47 +360,26 @@ class GeneticCode:
         """
         self.build_chain(genes=genes)
               
-    def build_chain(self, genes = [],
-                    sense = Sense(),
-                    speed = Speed(),
-                    size = Size(),
-                    diet = Diet(),
-                    reproduction = Reproduction(),
-                    life = Life(),
-                    sex = Sex(),
-                    stamina = Stamina()):
+    def build_chain(self, genes = []):
         """
         Le agrega al código genético los genes preestablecidos.
         
         :param genes: genes no predetermidos pasados por el usuario
         :type genes: list[Gene]
-        :param sense: gen de la visión  dentro de la cadena
-        :type sense: Sense
-        :param speed: gen de la velocidad dentro de la cadena
-        :type speed: Speed
-        :param size: gen del tamaño dentro de la cadena
-        :type size: Size
-        :param diet: gen del tipo de dieta dentro de la cadena
-        :type diet: Diet 
-        :param reproduction: gen del tipo de reproducción dentro de la cadena
-        :type reproduction: Reproduction
-        :param sex: gen del sexo dentro de la cadena
-        :type sex: Sex
-        :param life: gen de la espezanza de vida dentro de la cadena
-        :type life: Life
-        :param stamina: gen de la cantidad de energía dentro de la cadena
-        :type stamina: Stamina
+        
+        :rtype: None
         """
         
         self.chain = {
-            str(sense): sense,
-            str(speed): speed,
-            str(size): size,
-            str(diet): diet,
-            str(reproduction): reproduction,
-            str(life): life,
-            str(sex): sex,
-            str(stamina): stamina
+            str('sense'): Sense(),
+            str('speed'): Speed(),
+            str('size'): Size(),
+            str('diet'): Diet(),
+            str('reproduction'): Reproduction(),
+            str('life'): Life(),
+            str('sex'): Sex(),
+            str('fertility'): Fertility(),
+            str('stamina'): Stamina()
         }
         for gene in genes:
             self.add_gene(gene)         

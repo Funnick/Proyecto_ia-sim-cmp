@@ -1,5 +1,6 @@
 from object_base import *
 from action import *
+from aux_meth import manhattan, mean
 from random import randint
 from gene import GeneticCode
 
@@ -15,7 +16,7 @@ class Agent(Object_base):
     Clase que reprensenta a los agentes de la simulación.
     """
 
-    def __init__(self, pos_x = -1, pos_y = -1, genes = []):
+    def __init__(self, pos_x = -1, pos_y = -1, genes = [], behavior = None, states = None):
         """
         Inicializa un agente en la posición (pos_x, pos_y) con una energía máxima (max_energy).
 
@@ -30,9 +31,9 @@ class Agent(Object_base):
         Object_base.__init__(self, pos_x, pos_y)
         self.is_alive = True
         self.food_eat_today = 0
-        self.pregnant = False
+        self.pregnant = []
         self.age = 0
-        self.set_genetic()
+        self.set_genetic(genes)
         self.max_energy = self.genetic_code.get_gene('stamina').value
         self.current_energy = self.max_energy
         self.life_span = self.genetic_code.get_gene('life').value
@@ -41,12 +42,16 @@ class Agent(Object_base):
             self.genetic_code.get_gene('speed').value*2 + 
             self.genetic_code.get_gene('size').value*3)
 
-        self.behavior = Behavior(self)
-        self.states = {}
-        
-        self.set_default_behavior()
-        self.set_default_states()
         self.actual_state = []
+        self.states = states
+        if not states:
+            self.states = {}
+            self.set_default_states()
+        self.behavior = behavior
+        if not behavior:
+            self.behavior = Behavior(self)
+            self.set_default_behavior()
+        
         
     def __str__(self):
         return "Agent"
@@ -95,11 +100,21 @@ class Agent(Object_base):
         :type other_agent: Agent
         
         :rtype: Agent
-        :return: child_agent
+        :return: childs
         """
-        child_agent = Agent(-1, -1)
-        child_agent.genetic_code = self.genetic_code + other_agent.genetic_code
-        return child_agent
+        childs = []
+        for child in range(self.genetic_code.get_gene('fertility').value):    
+            if randint(0, 1):
+                behavior = other_agent.behavior
+                states = other_agent.states
+            else:
+                behavior = self.behavior
+                states = self.states
+            child_agent = Agent(-1, -1, behavior=behavior, states=states)
+            child_agent.genetic_code = self.genetic_code + other_agent.genetic_code
+            childs.append(child_agent)
+            
+        return childs
     
     def asexual_reproduction(self):
         """
@@ -109,7 +124,7 @@ class Agent(Object_base):
         :rtype: Agent
         :return: child_agent
         """
-        child_agent = Agent(-1, -1)
+        child_agent = Agent(-1, -1, behavior=self.behavior, states=self.states)
         child_agent.genetic_code = self.mutate()
         return child_agent
     
@@ -202,7 +217,6 @@ class Agent(Object_base):
         queue = [(self.pos_x, self.pos_y)]
         steps = 0
         max_steps = self.genetic_code.get_gene('speed').value
-        current_food = 0
         while (steps < max_steps):
             cell = queue.pop(0)
             path.append(cell)
@@ -216,11 +230,11 @@ class Agent(Object_base):
                         continue
                     
                     best_move_probability = 0
-                    for pred in self.behavior.predicates.values():
-                        if pred.function:
-                            if pred.rule:
-                                best_move_probability += (pred.rule(self) * 
-                                                          pred.function(cell, new_cell, world, path, pred.elements))
+                    for rule in self.behavior.rules.values():
+                        if rule.to_move:
+                            if rule.to_relevance:
+                                best_move_probability += (rule.to_relevance(self) * 
+                                                          rule.to_move(cell, new_cell, world, path, rule.elements))
                     
                     if best_move_probability < best_move[0]:
                         best_move[0] = best_move_probability
@@ -232,19 +246,17 @@ class Agent(Object_base):
             if self.food_eat_today > 0 and world.map[best_move[2][0]][best_move[2][1]].is_edge:
                 plan.append(DoNothing())
                 break
-            if not self.pregnant and (best_move[2][0], best_move[2][1]) in self.behavior.predicates['couples'].elements:
+            if not self.pregnant and (best_move[2][0], best_move[2][1]) in self.behavior.rules['couples'].elements:
                 plan.append(HaveSex())
-                self.behavior.predicates['couples'].elements.remove(best_move[2])
-            if ((best_move[2][0],best_move[2][1]) in self.behavior.predicates['eat'].elements and 
-                self.food_eat_today + current_food <= 2):
-                current_food += 1
+                self.behavior.rules['couples'].elements.remove(best_move[2])
+            if ((best_move[2][0],best_move[2][1]) in self.behavior.rules['food'].elements):
                 plan.append(Eat())
-                self.behavior.predicates['eat'].elements.remove(best_move[2])
+                self.behavior.rules['food'].elements.remove(best_move[2])
             steps += 1
             
         # Reiniciar elementos relevantes vistos
-        for pred in self.behavior.predicates.values():
-            pred.elements = []
+        for rule in self.behavior.rules.values():
+            rule.elements = []
         return plan
     
     def see_around(self, world):
@@ -284,9 +296,9 @@ class Agent(Object_base):
             for j in range(left_corner_y, right_corner_y + 1):
                 current_tile = world.map[i][j]
                 for element in current_tile.object_list:
-                    for pred in self.behavior.predicates.values():
-                        if pred.relevant and pred.relevant(self, element):
-                            pred.elements.append((i,j))
+                    for rule in self.behavior.rules.values():
+                        if rule.to_see and rule.to_see(self, element):
+                            rule.elements.append((i,j))
                         
         return (world,
                 (left_corner_x,
@@ -303,7 +315,7 @@ class Agent(Object_base):
         """
         
         # Configuración de la alimentación -------------------------------------------------
-        def relevant_eat(agent, element):
+        def see_food(agent, element):
             self_diet = agent.genetic_code.get_gene('diet').value
             self_size = agent.genetic_code.get_gene('size').value
             if (isinstance(element, Food) and
@@ -313,11 +325,11 @@ class Agent(Object_base):
                   (self_size - 2 >= element.genetic_code.get_gene('size').value and self_diet > 1)):
                 return True
             
-        def function_eat(cell, new_cell, world = None, path = None, elements = None):
+        def move_food(cell, new_cell, world = None, path = None, elements = None):
             return mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
                   for i in elements])
         
-        def rule_eat(agent):
+        def relevance_food(agent):
             if 'starve' in agent.actual_state:
                 return 1
             elif 'half' in agent.actual_state:
@@ -328,21 +340,21 @@ class Agent(Object_base):
             else:
                 return 0
         
-        self.behavior.set_predicate(Predicate('eat', relevant_eat, function_eat, rule_eat))
+        self.behavior.set_rule(Rule('food', see_food, move_food, relevance_food))
         # ----------------------------------------------------------------------------------    
         
         # Configuración para los árboles ---------------------------------------------------
-        def relevant_tree(agent, element):
+        def see_tree(agent, element):
             self_diet = agent.genetic_code.get_gene('diet').value
             if (isinstance(element, Tree) and 
                 (self_diet == 1 or self_diet == 3)):
                 return True
             
-        def function_tree(cell, new_cell, world = None, path = None, elements = None):
+        def move_tree(cell, new_cell, world = None, path = None, elements = None):
             return mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
                   for i in elements])
         
-        def rule_tree(agent):
+        def relevance_tree(agent):
             if 'starve' in agent.actual_state:
                 return 0.30
             elif 'half' in agent.actual_state:
@@ -353,29 +365,29 @@ class Agent(Object_base):
             else:
                 return 0.10
             
-        self.behavior.set_predicate(Predicate('tree', relevant_tree, function_tree, rule_tree))
+        self.behavior.set_rule(Rule('tree', see_tree, move_tree, relevance_tree))
         # ----------------------------------------------------------------------------------
         
         # Configuración para los enemigos --------------------------------------------------
-        def relevant_enemies(agent, element):
+        def see_enemies(agent, element):
             self_size = self.genetic_code.get_gene('size').value
             if (not(element is agent) and isinstance(element, agent.__class__) and 
                 (element.genetic_code.get_gene('size').value - 2 >= 
                  self_size and element.genetic_code.get_gene('diet').value > 1)):
                 return True
             
-        def function_enemies(cell, new_cell, world = None, path = None, elements = None):
+        def move_enemies(cell, new_cell, world = None, path = None, elements = None):
             return mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
                   for i in elements])
         
-        def rule_enemies(agent):
+        def relevance_enemies(agent):
             return -1
         
-        self.behavior.set_predicate(Predicate('enemies', relevant_enemies, function_enemies, rule_enemies))
+        self.behavior.set_rule(Rule('enemies', see_enemies, move_enemies, relevance_enemies))
         # ----------------------------------------------------------------------------------
         
         # Configuración para las posibles parejas ------------------------------------------
-        def relevant_couples(agent, element):
+        def see_couples(agent, element):
             self_sex = agent.genetic_code.get_gene('sex').value
             self_repr = agent.genetic_code.get_gene('reproduction').value
             if (not(element is agent) 
@@ -384,11 +396,11 @@ class Agent(Object_base):
                      and element.genetic_code.get_gene('sex').value != self_sex)): 
                 return True
             
-        def function_couples(cell, new_cell, world = None, path = None, elements = None):
+        def move_couples(cell, new_cell, world = None, path = None, elements = None):
             return mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
                   for i in elements])
             
-        def rule_couples(agent):
+        def relevance_couples(agent):
             if 'pregnant' in agent.actual_state:
                 return 0
             if 'starve' in agent.actual_state:
@@ -401,42 +413,42 @@ class Agent(Object_base):
             else:
                 return 0.30
                 
-        self.behavior.set_predicate(Predicate('couples', relevant_couples, function_couples, rule_couples))
+        self.behavior.set_rule(Rule('couples', see_couples, move_couples, relevance_couples))
         # -----------------------------------------------------------------------------------
         
         # Configuración para las elevaciones en el terreno ----------------------------------
-        def function_elevation(cell ,new_cell, world = None, path = None, elements = None):
+        def move_elevation(cell ,new_cell, world = None, path = None, elements = None):
             return abs(world.map[new_cell[0]][new_cell[1]].height - 
                        world.map[cell[0]][cell[1]].height)
             
-        def rule_elevation(agent):
+        def relevance_elevation(agent):
             return -0.1
         
-        self.behavior.set_predicate(Predicate('elevation', function = function_elevation, rule = rule_elevation))
+        self.behavior.set_rule(Rule('elevation', to_move = move_elevation, to_relevance = relevance_elevation))
         # -----------------------------------------------------------------------------------
         
         # Configuración para las pisadas en el suelo ----------------------------------------
-        def function_footprint(cell, new_cell, world = None, path = None, elements = None):
+        def move_footprint(cell, new_cell, world = None, path = None, elements = None):
             return len(world.map[new_cell[0]][new_cell[1]].footprints)
             
-        def rule_footprint(agent):
+        def relevance_footprint(agent):
             return 0.1
         
-        self.behavior.set_predicate(Predicate('footprint', function = function_footprint, rule = rule_footprint))
+        self.behavior.set_rule(Rule('footprint', to_move = move_footprint, to_relevance = relevance_footprint))
         # ------------------------------------------------------------------------------------
         
         # Configuración para el camino ya visto ----------------------------------------------
-        def function_visited(cell, new_cell, world = None, path = None, elements = None):
+        def move_visited(cell, new_cell, world = None, path = None, elements = None):
             return 1 if new_cell in path else 0
         
-        def rule_visited(agent):
+        def relevance_visited(agent):
             return 8
         
-        self.behavior.set_predicate(Predicate('visited', function = function_visited, rule = rule_visited))
+        self.behavior.set_rule(Rule('visited', to_move = move_visited, to_relevance = relevance_visited))
         # ------------------------------------------------------------------------------------
         
         # Configuración para la relevancia de los bordes -------------------------------------
-        def function_edges(cell, new_cell, world = None, path = None, elements = None):
+        def move_edges(cell, new_cell, world = None, path = None, elements = None):
             edges = [abs(new_cell[0] - (world.dimension_x -1)), 
                      abs(new_cell[1] - (world.dimension_y -1)),
                      new_cell[0],
@@ -444,7 +456,7 @@ class Agent(Object_base):
                     
             return mean(edges)
         
-        def rule_edges(agent):
+        def relevance_edges(agent):
             if 'starve' in agent.actual_state:
                 return 0
             elif 'half' in agent.actual_state:
@@ -455,21 +467,19 @@ class Agent(Object_base):
             else:
                 return 1
         
-        self.behavior.set_predicate(Predicate('edges', function = function_edges, rule = rule_edges))
+        self.behavior.set_rule(Rule('edges', to_move = move_edges, to_relevance = relevance_edges))
         # ------------------------------------------------------------------------------------
     
-    def set_state(self, state, func):
+    def set_state(self, state):
         """
         Agrega un nuevo estado al agente.
         
-        :param state: nombre del estado.
-        :type state: str
-        :param func: función asignada a un estado
-        :type func: function
+        :param state: estado a agregar
+        :type state: State
         
         :rtype: None
         """
-        self.states[state] = func
+        self.states[state.name] = state
         
     def del_state(self, state):
         """
@@ -480,7 +490,7 @@ class Agent(Object_base):
         
         :rtype: None
         """
-        del self.states[state]
+        del self.states[state.name]
     
     def get_states(self):
         """
@@ -499,7 +509,7 @@ class Agent(Object_base):
         """
         self.actual_state = []
         for state in self.states.keys():
-            if self.states[state](self):
+            if self.states[state].func(self):
                 self.actual_state.append(state)
         
     def set_default_states(self):
@@ -511,30 +521,27 @@ class Agent(Object_base):
         def state_starve(agent):
             if agent.food_eat_today == 0:
                 return True
-        self.set_state('starve', state_starve)
+        self.set_state(State('starve', state_starve))
             
         def state_half(agent):
             if agent.food_eat_today == 1:
                 return True
-        self.set_state('half', state_half)
+        self.set_state(State('half', state_half))
         
         def state_full(agent):
             if agent.food_eat_today > 1:
                 return True
-        self.set_state('full', state_full)
+        self.set_state(State('full', state_full))
         
         def state_pregant(agent):
             if agent.pregnant == 1:
                 return True
-        self.set_state('pregnant', state_pregant)
+        self.set_state(State('pregnant', state_pregant))
         
         def state_low_energy(agent):
             if agent.current_energy < agent.max_energy / 2:
                 return True
-        self.set_state('low_energy', state_low_energy)
-            
-    def add_state(self, func):
-        self.states.add_state(func)
+        self.set_state(State('low_energy', state_low_energy))
     
     def set_footprint(self, world):
         """
@@ -571,61 +578,92 @@ class Footprint:
         self.time -= 1
 
 class Behavior:
+    """
+    Clase que se encargará de agrupar las diferentes reglas
+    de comportamiento de los agentes.
+    """
     def __init__(self, agent):
+        """
+        Recibe el agente del cual constituirá su definición
+        de comportamiento y crea un diccionario en el que
+        quedarán las reglas.
+        :param agent: agente asigando
+        :type agent: Agent
+        
+        :rtype: Behavior
+        """
         self.agent = agent
-        self.predicates = {}
+        self.rules = {}
         
-    def set_predicate(self, predicate):
-        self.predicates[predicate.name] = predicate
+    def set_rule(self, rule):
+        """
+        Guarda una nueva regla en el diccionario de reglas.
+        
+        :rtype: None
+        """
+        self.rules[rule.name] = rule
     
-    def del_predicate(self, predicate):
-        del self.predicates[predicate]
-       
-class Predicate:
-    def __init__(self,
-                 name = 'unamed',
-                 relevant = None,
-                 function = None,
-                 rule = lambda agent:0):
+    def del_rule(self, rule):
+        """
+        Elimina regla del diccionario de reglas.
         
+        :rtype: None
+        """
+        del self.rules[rule]
+       
+class Rule:
+    """
+    Define una regla por la que se regirá el agente.
+    """
+    def __init__(self,
+                 name = 'unnamed',
+                 to_see = None,
+                 to_move = None,
+                 to_relevance = lambda agent:0):
+        
+        """
+        Se crea una nueva regla por la que se regirá el
+        agente para comportarse.
+        
+        :param name: nombre de la regla.
+        :type name: str
+        :param to_see: es la función que define el comportamiento
+        del agente a la hora de observar el mundo. Debe recibir un
+        agente y un objeto, y retornar True || False
+        :type to_see: function
+        :param to_move: función que define cómo el agente valora una
+        posición a la hora de moverse. Debe recibir una celda actual,
+        una celda a la que nos moveremos, un mundo, un lista de las
+        casillas ya vistas y una lista de elementos relevantes. Retorna
+        un valor numérico.
+        :type to_move: function
+        :param to_relevance: esta función indica cuán relevante es una
+        regla en dependencia del estado actual del agente. Debe retornar 
+        un valor entre 0 y 1.
+        :type to_relevance: function
+        
+        :rtype: Rule
+        """
         self.name = name
-        self.rule = rule
-        self.relevant = relevant
-        self.function = function
+        self.to_see = to_see
+        self.to_move = to_move
+        self.to_relevance = to_relevance
         self.elements = []
         
-# Funciones auxiliares -----------------------------------
-def mean(array):
+class State:
     """
-    Función para calcular la media, dando relevancia a los
-    valores más pequeños.
-    
-    :param array: lista de elementos a hallarle la media
-    :type array: list
-    
-    :rtype: float
-    :return: mean
+    Define un estado por el que puede pasar el agente.
     """
-    total = len(array)
-    sum_elem = 0
-    for elem in array:
-        sum_elem = sum_elem + 1/elem if elem != 0 else sum_elem + 1
-    mean = total/sum_elem if len(array) or sum_elem!=0 else 0
-    return mean
-
-def manhattan(pos1, pos2):
-    """
-    Función para calcular la distancia manhattan entre
-    dos coordenas de una matriz
-    
-    :param pos1: primera coordenada
-    :type pos1: Tuple[int, int]
-    :param pos2: segunda coordenada
-    :type pos2: Tuple[int, int]
-    
-    :rtype: int
-    :return: distance
-    """
-    distance = int(abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1]))
-    return distance
-# --------------------------------------------------------
+    def __init__(self,
+                 name = 'unnamed',
+                 func = None):
+        """
+        Se crea un nuevo estado.
+        :param name: nombre del estado
+        :type name: str
+        :param func: función que inidica si me encuentro en este estado.
+        
+        :rtype: State
+        """
+        self.name = name
+        self.func = func
