@@ -1,6 +1,5 @@
 from random import random, randint
 
-
 class Gene:
     """
     Clase base de los genes
@@ -52,17 +51,27 @@ class Gene:
         """
         new_value = self.value
         if random() <= self.chance_to_mutate:
-            if random() >= self.chance_to_go_up and self.value > self.min_level:
+            if random() > self.chance_to_go_up and self.value > self.min_level:
                 new_value -= self.step
             elif self.value < self.max_level:
                 new_value += self.step
-        new_gene = self.__class__(self.min_level, 
+        return self.__class__(self.min_level, 
                             self.max_level, 
                             new_value, 
                             self.chance_to_mutate, 
                             self.chance_to_go_up,
                             self.step)
-        return new_gene
+    
+    def copy(self):
+        """
+        Devuelve una copia del gen.
+        """
+        return self.__class__(self.min_level, 
+                            self.max_level, 
+                            self.value, 
+                            self.chance_to_mutate, 
+                            self.chance_to_go_up,
+                            self.step)
     
     def def_mutate(self, func):
         """
@@ -295,7 +304,6 @@ class Sex(Gene):
         """
         return Sex()
    
-   
 class Fertility(Gene):
     """
     Gen que describe la capacidad del agente parir
@@ -399,11 +407,11 @@ class GeneticCode:
         new_chain = {}
         for gene in self.chain.keys():
             if random() < 0.5:
-                new_chain[gene] = self.chain[gene]
+                new_chain[gene] = self.chain[gene].copy()
             else:
-                new_chain[gene] = other.chain[gene]
-            if random() < 0.3:
-                new_chain[gene].mutate
+                new_chain[gene] = other.chain[gene].copy()
+            if random() < 0.5:
+                new_chain[gene] = new_chain[gene].mutate
         new_genetic_code.chain = new_chain
         return new_genetic_code
     

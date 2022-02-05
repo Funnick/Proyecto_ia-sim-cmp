@@ -1,8 +1,8 @@
-from object_base import *
-from action import *
-from aux_meth import manhattan, mean
+from object_base import Object_base
+from action import MoveNorth, MoveSouth, MoveWest, MoveEast, Eat, HaveSex, DoNothing
 from random import randint
 from gene import GeneticCode
+from behavior import Behavior
 
 directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 directions_actions = [
@@ -16,7 +16,7 @@ class Agent(Object_base):
     Clase que reprensenta a los agentes de la simulación.
     """
 
-    def __init__(self, pos_x = -1, pos_y = -1, genes = [], behavior = None, states = None):
+    def __init__(self, pos_x = -1, pos_y = -1, genes = [], behavior = None, rules = [], states = None):
         """
         Inicializa un agente en la posición (pos_x, pos_y) con una energía máxima (max_energy).
 
@@ -30,13 +30,14 @@ class Agent(Object_base):
         """
         Object_base.__init__(self, pos_x, pos_y)
         self.is_alive = True
+        self.age = 0
         self.food_eat_today = 0
         self.pregnant = []
-        self.age = 0
         self.set_genetic(genes)
         self.max_energy = self.genetic_code.get_gene('stamina').value
         self.current_energy = self.max_energy
         self.life_span = self.genetic_code.get_gene('life').value
+        
         self.energy_lost_fun = lambda sense, speed, size: (
             self.genetic_code.get_gene('sense').value +
             self.genetic_code.get_gene('speed').value*2 + 
@@ -47,11 +48,11 @@ class Agent(Object_base):
         if not states:
             self.states = {}
             self.set_default_states()
-        self.behavior = behavior
         if not behavior:
-            self.behavior = Behavior(self)
-            self.set_default_behavior()
-        
+            self.behavior = Behavior(rules)
+        else: 
+            self.behavior = behavior
+            self.behavior.agent = self
         
     def __str__(self):
         return "Agent"
@@ -99,7 +100,7 @@ class Agent(Object_base):
         :param other_agent: agente con el cual se realizará la reproducción
         :type other_agent: Agent
         
-        :rtype: Agent
+        :rtype: list
         :return: childs
         """
         childs = []
@@ -110,7 +111,7 @@ class Agent(Object_base):
             else:
                 behavior = self.behavior
                 states = self.states
-            child_agent = Agent(-1, -1, behavior=behavior, states=states)
+            child_agent = Agent(behavior=behavior, states=states)
             child_agent.genetic_code = self.genetic_code + other_agent.genetic_code
             childs.append(child_agent)
             
@@ -208,50 +209,68 @@ class Agent(Object_base):
             self.genetic_code.get_gene('speed').value, 
             self.genetic_code.get_gene('size').value):
             return [DoNothing()]
+        # Actualiza el estado actual del agente
+        self.update_state()
         
         world = perception[0]
         limits = perception[1]
         plan = []
         path = []
-        self.update_state()
-        queue = [(self.pos_x, self.pos_y)]
         steps = 0
+        queue = [(self.pos_x, self.pos_y)]
         max_steps = self.genetic_code.get_gene('speed').value
         while (steps < max_steps):
             cell = queue.pop(0)
             path.append(cell)
             best_move = [10000,-1,None]
-            
+            # Por cada posible movimiento que puedo hacer desde la casilla casilla actual
             for move in range(4):
                 new_cell = (cell[0] + directions[move][0], cell[1] + directions[move][1])
+                
+                # Si el movimiento está en los límites de la visión
                 if (self.in_limits((new_cell[0], new_cell[1]), limits)):
+                    # Si la celda es un borde y no he comido, ve hacia la siguiente
                     if (world.cell_is_edge(new_cell[0], new_cell[1]) and 
                         self.food_eat_today == 0):
                         continue
                     
                     best_move_probability = 0
+                    # Por cada regla en el comportamiento del agente
                     for rule in self.behavior.rules.values():
-                        if rule.to_move:
-                            if rule.to_relevance:
-                                best_move_probability += (rule.to_relevance(self) * 
-                                                          rule.to_move(cell, new_cell, world, path, rule.elements))
-                    
+                        # Si existen funciones para el movimiento y para la relevancia
+                        # calcula la probabilidad de que sea el mejor movimiento
+                        if rule.to_move and rule.to_relevance:
+                            best_move_probability += (rule.to_relevance(self) * 
+                                                      rule.to_move(cell, 
+                                                                   new_cell, 
+                                                                   world, 
+                                                                   path, 
+                                                                   rule.elements))
+                    # Si este movimiento es el mejor hasta ahora, actualiza el mejor movimiento
                     if best_move_probability < best_move[0]:
                         best_move[0] = best_move_probability
                         best_move[1] = move
                         best_move[2] = new_cell
-                        
+            # Agrega el nuevo movimiento a la lista de movimientos
             queue.append(best_move[2])
+            # Agrega al plan la acción de moverse en la dirección indicada
             plan.append(directions_actions[best_move[1]])
+            # Si ya el agente comió, y está parado sobre un borde, que se quede ahí y no haga nada
             if self.food_eat_today > 0 and world.map[best_move[2][0]][best_move[2][1]].is_edge:
                 plan.append(DoNothing())
                 break
-            if not self.pregnant and (best_move[2][0], best_move[2][1]) in self.behavior.rules['couples'].elements:
+            # Si el agente no está embarazado, y en el nuevo movimiento vi una posible pareja
+            # agrega la acción de tener sexo
+            if not self.pregnant and best_move[2] in self.behavior.rules['couples'].elements:
                 plan.append(HaveSex())
                 self.behavior.rules['couples'].elements.remove(best_move[2])
-            if ((best_move[2][0],best_move[2][1]) in self.behavior.rules['food'].elements):
+            # Si el nuevo movimiento me lleva a un lugar donde vi comida, agrega al plan la
+            # acción de comer
+            if (best_move[2] in self.behavior.rules['food'].elements):
                 plan.append(Eat())
                 self.behavior.rules['food'].elements.remove(best_move[2])
+                
+            # Aumenta en uno los pasos dados hasta ahora
             steps += 1
             
         # Reiniciar elementos relevantes vistos
@@ -266,8 +285,8 @@ class Agent(Object_base):
         de tamaño dimension_x * dimension_y. La parte que
         es copiada es el cuadrado que tiene esquina superior izquierda
         (left_corner_x y left_corner_y) y esquina inferior derecha
-        (right_corner_x y right_corner_y). Además, revisa cada uno de los
-        predicados del agente y verifica qué elementos le son relevantes.
+        (right_corner_x y right_corner_y). Además, revisa cada uno de las
+        reglas del agente y verifica qué elementos le son relevantes.
 
         :param left_corner_x: coordenada x, esquina superior izquierda
         :type left_corner_x: int
@@ -305,170 +324,6 @@ class Agent(Object_base):
                  right_corner_x,
                  left_corner_y,
                  right_corner_y))
-    
-    def set_default_behavior(self):
-        """
-        Agrega al agente un comportamiento predeterminado,
-        con las reglas establecidas por nosostros.
-        
-        :rtype: None
-        """
-        
-        # Configuración de la alimentación -------------------------------------------------
-        def see_food(agent, element):
-            self_diet = agent.genetic_code.get_gene('diet').value
-            self_size = agent.genetic_code.get_gene('size').value
-            if (isinstance(element, Food) and
-                (self_diet == 1 or self_diet == 3)):
-                return True
-            elif (not(element is agent) and isinstance(element, agent.__class__) and 
-                  (self_size - 2 >= element.genetic_code.get_gene('size').value and self_diet > 1)):
-                return True
-            
-        def move_food(cell, new_cell, world = None, path = None, elements = None):
-            return mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
-                  for i in elements])
-        
-        def relevance_food(agent):
-            if 'starve' in agent.actual_state:
-                return 1
-            elif 'half' in agent.actual_state:
-                if 'low_energy' in agent.actual_state:
-                    return 0
-                else:
-                    return 0.5
-            else:
-                return 0
-        
-        self.behavior.set_rule(Rule('food', see_food, move_food, relevance_food))
-        # ----------------------------------------------------------------------------------    
-        
-        # Configuración para los árboles ---------------------------------------------------
-        def see_tree(agent, element):
-            self_diet = agent.genetic_code.get_gene('diet').value
-            if (isinstance(element, Tree) and 
-                (self_diet == 1 or self_diet == 3)):
-                return True
-            
-        def move_tree(cell, new_cell, world = None, path = None, elements = None):
-            return mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
-                  for i in elements])
-        
-        def relevance_tree(agent):
-            if 'starve' in agent.actual_state:
-                return 0.30
-            elif 'half' in agent.actual_state:
-                if 'low_energy' in agent.actual_state:
-                    return 0.10
-                else:
-                    return 0.15
-            else:
-                return 0.10
-            
-        self.behavior.set_rule(Rule('tree', see_tree, move_tree, relevance_tree))
-        # ----------------------------------------------------------------------------------
-        
-        # Configuración para los enemigos --------------------------------------------------
-        def see_enemies(agent, element):
-            self_size = self.genetic_code.get_gene('size').value
-            if (not(element is agent) and isinstance(element, agent.__class__) and 
-                (element.genetic_code.get_gene('size').value - 2 >= 
-                 self_size and element.genetic_code.get_gene('diet').value > 1)):
-                return True
-            
-        def move_enemies(cell, new_cell, world = None, path = None, elements = None):
-            return mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
-                  for i in elements])
-        
-        def relevance_enemies(agent):
-            return -1
-        
-        self.behavior.set_rule(Rule('enemies', see_enemies, move_enemies, relevance_enemies))
-        # ----------------------------------------------------------------------------------
-        
-        # Configuración para las posibles parejas ------------------------------------------
-        def see_couples(agent, element):
-            self_sex = agent.genetic_code.get_gene('sex').value
-            self_repr = agent.genetic_code.get_gene('reproduction').value
-            if (not(element is agent) 
-                and isinstance(element, agent.__class__) 
-                and (self_repr == 2 and element.genetic_code.get_gene('reproduction').value == 2 
-                     and element.genetic_code.get_gene('sex').value != self_sex)): 
-                return True
-            
-        def move_couples(cell, new_cell, world = None, path = None, elements = None):
-            return mean([manhattan([new_cell[0], new_cell[1]], [i[0], i[1]])
-                  for i in elements])
-            
-        def relevance_couples(agent):
-            if 'pregnant' in agent.actual_state:
-                return 0
-            if 'starve' in agent.actual_state:
-                return 0.20
-            elif 'half' in agent.actual_state:
-                if 'low_energy' in agent.actual_state:
-                    return 0.10
-                else:
-                    return 0.15
-            else:
-                return 0.30
-                
-        self.behavior.set_rule(Rule('couples', see_couples, move_couples, relevance_couples))
-        # -----------------------------------------------------------------------------------
-        
-        # Configuración para las elevaciones en el terreno ----------------------------------
-        def move_elevation(cell ,new_cell, world = None, path = None, elements = None):
-            return abs(world.map[new_cell[0]][new_cell[1]].height - 
-                       world.map[cell[0]][cell[1]].height)
-            
-        def relevance_elevation(agent):
-            return -0.1
-        
-        self.behavior.set_rule(Rule('elevation', to_move = move_elevation, to_relevance = relevance_elevation))
-        # -----------------------------------------------------------------------------------
-        
-        # Configuración para las pisadas en el suelo ----------------------------------------
-        def move_footprint(cell, new_cell, world = None, path = None, elements = None):
-            return len(world.map[new_cell[0]][new_cell[1]].footprints)
-            
-        def relevance_footprint(agent):
-            return 0.1
-        
-        self.behavior.set_rule(Rule('footprint', to_move = move_footprint, to_relevance = relevance_footprint))
-        # ------------------------------------------------------------------------------------
-        
-        # Configuración para el camino ya visto ----------------------------------------------
-        def move_visited(cell, new_cell, world = None, path = None, elements = None):
-            return 1 if new_cell in path else 0
-        
-        def relevance_visited(agent):
-            return 8
-        
-        self.behavior.set_rule(Rule('visited', to_move = move_visited, to_relevance = relevance_visited))
-        # ------------------------------------------------------------------------------------
-        
-        # Configuración para la relevancia de los bordes -------------------------------------
-        def move_edges(cell, new_cell, world = None, path = None, elements = None):
-            edges = [abs(new_cell[0] - (world.dimension_x -1)), 
-                     abs(new_cell[1] - (world.dimension_y -1)),
-                     new_cell[0],
-                     new_cell[1]]
-                    
-            return mean(edges)
-        
-        def relevance_edges(agent):
-            if 'starve' in agent.actual_state:
-                return 0
-            elif 'half' in agent.actual_state:
-                if 'low_energy' in agent.actual_state:
-                    return 1
-                else:
-                    return 0.5
-            else:
-                return 1
-        
-        self.behavior.set_rule(Rule('edges', to_move = move_edges, to_relevance = relevance_edges))
-        # ------------------------------------------------------------------------------------
     
     def set_state(self, state):
         """
@@ -546,6 +401,10 @@ class Agent(Object_base):
     def set_footprint(self, world):
         """
         Método para ubicar una pisada del agente en una casilla
+        :param world: mundo en el cual será ubicada la pisada
+        :type world: World
+        
+        :rtype: None
         """
         tile = world.map[self.pos_x][self.pos_y]
         if not tile.is_edge:
@@ -576,80 +435,6 @@ class Footprint:
         :rtype: None
         """
         self.time -= 1
-
-class Behavior:
-    """
-    Clase que se encargará de agrupar las diferentes reglas
-    de comportamiento de los agentes.
-    """
-    def __init__(self, agent):
-        """
-        Recibe el agente del cual constituirá su definición
-        de comportamiento y crea un diccionario en el que
-        quedarán las reglas.
-        :param agent: agente asigando
-        :type agent: Agent
-        
-        :rtype: Behavior
-        """
-        self.agent = agent
-        self.rules = {}
-        
-    def set_rule(self, rule):
-        """
-        Guarda una nueva regla en el diccionario de reglas.
-        
-        :rtype: None
-        """
-        self.rules[rule.name] = rule
-    
-    def del_rule(self, rule):
-        """
-        Elimina regla del diccionario de reglas.
-        
-        :rtype: None
-        """
-        del self.rules[rule]
-       
-class Rule:
-    """
-    Define una regla por la que se regirá el agente.
-    """
-    def __init__(self,
-                 name = 'unnamed',
-                 to_see = None,
-                 to_move = None,
-                 to_relevance = lambda agent:0):
-        
-        """
-        Se crea una nueva regla por la que se regirá el
-        agente para comportarse.
-        
-        :param name: nombre de la regla.
-        :type name: str
-        :param to_see: es la función que define el comportamiento
-        del agente a la hora de observar el mundo. Debe recibir un
-        agente y un objeto, y retornar True || False
-        :type to_see: function
-        :param to_move: función que define cómo el agente valora una
-        posición a la hora de moverse. Debe recibir una celda actual,
-        una celda a la que nos moveremos, un mundo, un lista de las
-        casillas ya vistas y una lista de elementos relevantes. Retorna
-        un valor numérico.
-        :type to_move: function
-        :param to_relevance: esta función indica cuán relevante es una
-        regla en dependencia del estado actual del agente. Debe retornar 
-        un valor entre 0 y 1.
-        :type to_relevance: function
-        
-        :rtype: Rule
-        """
-        self.name = name
-        self.to_see = to_see
-        self.to_move = to_move
-        self.to_relevance = to_relevance
-        self.elements = []
-        
 class State:
     """
     Define un estado por el que puede pasar el agente.
@@ -667,3 +452,4 @@ class State:
         """
         self.name = name
         self.func = func
+        
