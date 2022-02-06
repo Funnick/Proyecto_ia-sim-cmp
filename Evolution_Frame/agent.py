@@ -123,9 +123,10 @@ class Agent(Object_base):
         :return: child_agent
         """
         child_agent = Agent(-1, -1, behavior=self.behavior)
-        child_agent.genetic_code = self.mutate()
+        child_agent.genetic_code = self.mutate
         return child_agent
     
+    @property
     def mutate(self):
         """
         Hace mutar todos los genes que posee el agente.
@@ -322,28 +323,6 @@ class Agent(Object_base):
                  left_corner_y,
                  right_corner_y))
     
-    def set_state(self, state):
-        """
-        Agrega un nuevo estado al agente.
-        
-        :param state: estado a agregar
-        :type state: State
-        
-        :rtype: None
-        """
-        self.states[state.name] = state
-        
-    def del_state(self, state):
-        """
-        Elimina un estado del agente.
-        
-        :param state: nombre del estado que será eliminado.
-        :type state: str
-        
-        :rtype: None
-        """
-        del self.states[state.name]
-    
     def get_states(self):
         """
         Retorna una lista con los nombres de todos los estados.
@@ -363,37 +342,6 @@ class Agent(Object_base):
         for state in self.behavior.states.keys():
             if self.behavior.states[state].func(self):
                 self.actual_state.append(state)
-        
-    def set_default_states(self):
-        """
-        Define los estados por los que puede pasar el agente.
-        
-        :rtype: None
-        """
-        def state_starve(agent):
-            if agent.food_eat_today == 0:
-                return True
-        self.set_state(State('starve', state_starve))
-            
-        def state_half(agent):
-            if agent.food_eat_today == 1:
-                return True
-        self.set_state(State('half', state_half))
-        
-        def state_full(agent):
-            if agent.food_eat_today > 1:
-                return True
-        self.set_state(State('full', state_full))
-        
-        def state_pregant(agent):
-            if agent.pregnant == 1:
-                return True
-        self.set_state(State('pregnant', state_pregant))
-        
-        def state_low_energy(agent):
-            if agent.current_energy < agent.max_energy / 2:
-                return True
-        self.set_state(State('low_energy', state_low_energy))
     
     def set_footprint(self, world):
         """

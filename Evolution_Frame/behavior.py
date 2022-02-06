@@ -4,14 +4,15 @@ from aux_meth import manhattan, mean
 class Behavior:
     """
     Clase que se encargará de agrupar las diferentes reglas
-    de comportamiento de los agentes.
+    y estaods de comportamiento de los agentes.
     """
     def __init__(self, rules = [], states = []):
         """
-        Recibe un conjunto de reglas que definirán un
-        comportamiento y crea un diccionario en el que
-        quedarán estas.
+        Recibe un conjunto de reglas y estados que definirán un
+        comportamiento y crean diccionarios en los que quedarán estos.
         :param rules: reglas por las que se regirá el agente
+        :type rules: list
+        :param states: conjunto de estados por los que pasarán los agentes
         :type rules: list
         
         :rtype: Behavior
@@ -104,7 +105,7 @@ class Behavior:
             if agent.food_eat_today > 1:
                 return True
         
-        def state_pregant(agent):
+        def state_pregnant(agent):
             if agent.pregnant == 1:
                 return True
         
@@ -116,7 +117,7 @@ class Behavior:
             'starve':State('starve', state_starve),
             'half':State('half', state_half),
             'full':State('full', state_full),
-            'pregnant':State('pregnant', state_pregant),
+            'pregnant':State('pregnant', state_pregnant),
             'low_energy':State('low_energy', state_low_energy)
         }
         for state in states:
@@ -422,4 +423,3 @@ class State:
         """
         self.name = name
         self.func = func
-        

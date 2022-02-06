@@ -105,24 +105,3 @@ def manhattan(pos1, pos2):
     """
     distance = int(abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1]))
     return distance
-
-class MapFunction:
-    """
-    Clase para crear funciones de mapeo, que filtren los
-    agentes según el comportamiento de una variable.
-    """
-    def __init__(self, name='unnamed', func = None):
-        """
-        Se crea una nueva función de mapeo.
-        
-        :param name: nombre que recibirá la función de mapeo
-        :type name: str
-        :param func: función de mapeo, que recibe un agente y retorna
-        True || False
-        :type func: function
-        
-        :rtype: MapFunction
-        """
-        self.name = name
-        self.func = func
-        self.elements = []

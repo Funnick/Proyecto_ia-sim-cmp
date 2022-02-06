@@ -1,9 +1,12 @@
-from world import World
-from action import DoNothing
+from world import *
+from action import *
+from object_base import *
+from gene import *
+from behavior import *
+from agent import *
 from random import shuffle
 from matplotlib import pyplot as plt
 from statistics import stdev
-from aux_meth import MapFunction
 
 
 class Simulator:
@@ -19,12 +22,12 @@ class Simulator:
         :rtype: Simulator
         """
         self.world = None
-        self.restrictions = None
         self.agents = []
         self.active_agents = []
         self.day = 0
-        self.restrictions = True
+        self.restriction = None
         self.food_function = None
+        self.world = None
 
     def create_world(self, dimension_x, dimension_y, trees = 0):
         """
@@ -52,7 +55,7 @@ class Simulator:
         """
         self.food_function = func
     
-    def add_restrictions(self, func):
+    def add_restriction(self, func):
         """
         Agrega restricciones a la simulación.
         
@@ -61,7 +64,7 @@ class Simulator:
         
         :rtype: None
         """
-        self.restrictions = func
+        self.restriction = func
 
     def add_agent_to_simulation(self, agent, pos = (-1,-1)):
         """
@@ -98,7 +101,8 @@ class Simulator:
         """
         Ejecuta una acción por cada agente.
 
-        :rtype: None
+        :rtype: bool
+        :return: all_do_nothing_actions
         """
         all_do_nothing_actions = True
         shuffle(self.active_agents)
@@ -169,8 +173,9 @@ class Simulator:
     def simulate(self, 
                  days = 1, 
                  food_function = None, 
-                 maping = [MapFunction('alive', lambda agent: agent.is_alive)], 
-                 plot = False):
+                 maping = [], 
+                 plot = False,
+                 dimensions = None):
         """
         Corre una cantidad n de días de la simulación.
         
@@ -186,16 +191,22 @@ class Simulator:
         :rtype: List
         :return: results
         """
+        if not self.world:
+            self.create_world(dimensions[0], dimensions[0])
+        
+        if not maping:
+            maping = [MapFunction('alive', lambda agent: agent.is_alive)]
+        
         if food_function:
             self.set_food_function(food_function)
             
         for r in range(days):
-            if not self.restrictions:
+            if self.restriction and self.restriction(self):
                 break
             self.world.add_food(self.food_function(self))
             self.simulate_one_round()
             for func in maping:
-                func.elements.append(len(self.get_agents(func.func)))
+                func.elements.append(len(self.filter_agents(func.func)))
                 
         if plot:
             for func in maping:
@@ -229,7 +240,7 @@ class Simulator:
         self.reproduction_agents()
         self.reset_agents_attributes()
         
-    def get_agents(self, func):
+    def filter_agents(self, func):
         """
         Retorna los agentes que cumplen con cierto predicado.
         :param func: Función que devuelve True or False
@@ -263,8 +274,13 @@ class Simulator:
         return len(self.agents)
     
     def get_statistics(self):
+        """
+        Imprime las estadísticas generales de la simulación.
+        
+        :rtype: None
+        """
         print("Día ->", self.get_simulation_day())
-        print("Número de agentes ->", self.get_number_of_agents())
+        print("Número de agentes ->", self.get_number_of_agents(),'\n')
     
     def end_simulation(self):
         """
@@ -276,7 +292,14 @@ class Simulator:
         print('La simulación ha terminado.')
         self.get_statistics()
     
-    def print_world(self,world):
+    def print_world(self, world):
+        """
+        Imprime una representación del mundo, con sus objetos.
+        :param world: mundo a representar.
+        :type world: World
+        
+        :rtype: None
+        """
         m = ""
         for i in range(world.dimension_x):
             for j in range(world.dimension_y):
@@ -290,7 +313,14 @@ class Simulator:
             m += "\n"
         print(m) 
         
-    def print_footprints(self,world):
+    def print_footprints(self, world):
+        """
+        Imprime la distribución de las marcas de las pisadas en el mundo.
+        :param world: mundo del cual se sacarán las pisadas
+        :type world: World
+        
+        :rtype: None
+        """
         m = ""
         for i in range(world.dimension_x):
             for j in range(world.dimension_y):
@@ -300,6 +330,13 @@ class Simulator:
         print(m) 
         
     def print_altitude(self,world):
+        """
+        Imprime la distribución de las altitudes en el mundo.
+        :param world: mundo del cual se representarán los desniveles.
+        :type world: World
+        
+        :rtype: N
+        """
         m = ""
         for i in range(world.dimension_x):
             for j in range(world.dimension_y):
@@ -316,7 +353,7 @@ class Simulator:
         "Tree": "T"
         }
         
-class Master_simulation:
+class MasterSimulator:
     """
     Clase que permitirá correr varias simulaciones con las
     mismas características para evaluar el comportamiento
@@ -327,9 +364,10 @@ class Master_simulation:
                  rounds = 30, 
                  days = 100,
                  food_distribution = None, 
-                 agents_distribution = None):
+                 agents_distribution = None,
+                 trees = 0):
         """
-        Se crea una nueva instancia de una simulación maestra.
+        Se crea una nueva instancia de un simulador maestro.
         
         :param dimensions: tupla que contiene las dimensiones del mapa
         :type dimensions: Tuple[int, int]
@@ -342,8 +380,10 @@ class Master_simulation:
         :type food_distribution: function
         :param agents_distribution: función que retorna un conjunto de agentes
         :type agents_distribution: function
+        :param trees: cantidad de árboles a colocar
+        :type trees: int
         
-        :rtype: SimulatorMaster
+        :rtype: MasterSimulation
         """
         self.dimensions = dimensions
         self.rounds = rounds
@@ -351,11 +391,12 @@ class Master_simulation:
         self.food_distribution = food_distribution
         self.agents_distribution = agents_distribution
         self.rounds = rounds
+        self.trees = trees
         
     def run(self, 
             plot = False, 
             means = True, 
-            maping = [MapFunction('alive', lambda agent: agent.is_alive)],
+            maping = [],
             food_func = None):
         """
         Corre n simulaciones con las mismas características.
@@ -371,20 +412,24 @@ class Master_simulation:
         :rtype: list
         :return: data_agents
         """
+        if not maping:
+            maping = [MapFunction('alive', lambda agent: agent.is_alive)]
+        
         if food_func:
             self.food_distribution = food_func
         data_agents = []
         for r in range(self.rounds):
             print("Comenzando la simulación:", r+1)
             s = Simulator()
-            s.create_world(self.dimensions[0], self.dimensions[1])
+            s.create_world(self.dimensions[0], self.dimensions[1], trees=self.trees)
             for a in self.agents_distribution():
                 s.add_agent_to_simulation(a)
             agents=(s.simulate(self.days, 
                                      self.food_distribution, 
                                      maping=maping, 
                                      plot=0))
-            plt.plot([i for i in range(len(agents[0]))], agents[0], 'b-', alpha=0.15)
+            if plot:
+                plt.plot([i for i in range(len(agents[0]))], agents[0], 'b-', alpha=0.15)
             data_agents.append(agents)
         
         for var in range(len(maping)):
@@ -402,9 +447,9 @@ class Master_simulation:
                 dev_up.append(total + dev)
                 dev_down.append(total - dev)
                 mean_agents.append(total)
-            if plot:
-                plt.plot([i for i in range(len(mean_agents))], mean_agents, alpha=1, label = maping[var].name)
+            
             if means:
+                plt.plot([i for i in range(len(mean_agents))], mean_agents, alpha=1, label = maping[var].name)
                 plt.fill_between([i for i in range(len(dev_up))],dev_up, dev_down, alpha=.25)
         if plot or means:
             plt.grid()
@@ -415,3 +460,23 @@ class Master_simulation:
             plt.show()
         return data_agents
         
+class MapFunction:
+    """
+    Clase para crear funciones de mapeo, que filtren los
+    agentes según el comportamiento de una variable.
+    """
+    def __init__(self, name='unnamed', func = None):
+        """
+        Se crea una nueva función de mapeo.
+        
+        :param name: nombre que recibirá la función de mapeo
+        :type name: str
+        :param func: función de mapeo, que recibe un agente y retorna
+        True || False
+        :type func: function
+        
+        :rtype: MapFunction
+        """
+        self.name = name
+        self.func = func
+        self.elements = []

@@ -272,8 +272,8 @@ class Diet(Gene):
 class Sex(Gene):
     """
     Gen que describe el sexo del agente. Poseerá
-    tres estados, 1 si el agente es asexual, 2 si
-    es sexual y femenino, 3 si es sexual y masculino.
+    tres estados, 1 si el agente es femenino, 2 si
+    es sexual.
     """
     def __init__(self,
                  min_level = 1,
