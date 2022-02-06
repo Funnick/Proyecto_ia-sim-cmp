@@ -6,7 +6,7 @@ class Behavior:
     Clase que se encargará de agrupar las diferentes reglas
     de comportamiento de los agentes.
     """
-    def __init__(self, rules = []):
+    def __init__(self, rules = [], states = []):
         """
         Recibe un conjunto de reglas que definirán un
         comportamiento y crea un diccionario en el que
@@ -16,6 +16,7 @@ class Behavior:
         
         :rtype: Behavior
         """
+        self.build_states(states=states)
         self.build_rules(rules=rules)
     
     def build_rules(self, rules = []):
@@ -43,6 +44,8 @@ class Behavior:
     def set_rule(self, rule):
         """
         Guarda una nueva regla en el diccionario de reglas.
+        :param rule: regla a agregar
+        :type rule: Rule
         
         :rtype: None
         """
@@ -50,45 +53,104 @@ class Behavior:
     
     def del_rule(self, rule):
         """
-        Elimina regla del diccionario de reglas.
+        Elimina una regla del diccionario de reglas.
+        :param rule: regla a eliminar
+        :type rule: Rule
         
         :rtype: None
         """
         del self.rules[rule]
+        
+    def set_state(self, state):
+        """
+        Agrega un nuevo estado al agente.
+        
+        :param state: estado a agregar
+        :type state: State
+        
+        :rtype: None
+        """
+        self.states[state.name] = state
+        
+    def del_state(self, state):
+        """
+        Elimina un estado del agente.
+        
+        :param state: nombre del estado que será eliminado.
+        :type state: str
+        
+        :rtype: None
+        """
+        del self.states[state.name]
        
+    def build_states(self, states = []):
+        """
+        Método que define los estados con los que contará
+        este comportamiento.
+        :param states: lista de funciones de estado pasadas por el usuario
+        :type states: list
+        
+        :rtype: None
+        """
+        def state_starve(agent):
+            if agent.food_eat_today == 0:
+                return True
+            
+        def state_half(agent):
+            if agent.food_eat_today == 1:
+                return True
+        
+        def state_full(agent):
+            if agent.food_eat_today > 1:
+                return True
+        
+        def state_pregant(agent):
+            if agent.pregnant == 1:
+                return True
+        
+        def state_low_energy(agent):
+            if agent.current_energy < agent.max_energy / 2:
+                return True
+            
+        self.states = {
+            'starve':State('starve', state_starve),
+            'half':State('half', state_half),
+            'full':State('full', state_full),
+            'pregnant':State('pregnant', state_pregant),
+            'low_energy':State('low_energy', state_low_energy)
+        }
+        for state in states:
+            self.states[state.name] = state
+             
 class Rule:
     """
-    Define una regla por la que se regirá el agente.
+    Se crea una nueva regla por la que se regirá el
+    agente para comportarse.
+    
+    :param name: nombre de la regla.
+    :type name: str
+    :param to_see: es la función que define el comportamiento
+    del agente a la hora de observar el mundo. Debe recibir un
+    agente y un objeto, y retornar True || False
+    :type to_see: function
+    :param to_move: función que define cómo el agente valora una
+    posición a la hora de moverse. Debe recibir una celda actual,
+    una celda a la que nos moveremos, un mundo, un lista de las
+    casillas ya vistas y una lista de elementos relevantes. Retorna
+    un valor numérico.
+    :type to_move: function
+    :param to_relevance: esta función indica cuán relevante es una
+    regla en dependencia del estado actual del agente. Debe retornar 
+    un valor entre 0 y 1.
+    :type to_relevance: function
+    
+    :rtype: Rule
     """
     def __init__(self,
                  name = 'unnamed',
                  to_see = None,
                  to_move = None,
                  to_relevance = lambda agent:0):
-        
-        """
-        Se crea una nueva regla por la que se regirá el
-        agente para comportarse.
-        
-        :param name: nombre de la regla.
-        :type name: str
-        :param to_see: es la función que define el comportamiento
-        del agente a la hora de observar el mundo. Debe recibir un
-        agente y un objeto, y retornar True || False
-        :type to_see: function
-        :param to_move: función que define cómo el agente valora una
-        posición a la hora de moverse. Debe recibir una celda actual,
-        una celda a la que nos moveremos, un mundo, un lista de las
-        casillas ya vistas y una lista de elementos relevantes. Retorna
-        un valor numérico.
-        :type to_move: function
-        :param to_relevance: esta función indica cuán relevante es una
-        regla en dependencia del estado actual del agente. Debe retornar 
-        un valor entre 0 y 1.
-        :type to_relevance: function
-        
-        :rtype: Rule
-        """
         self.name = name
         self.to_see = to_see
         self.to_move = to_move
@@ -343,3 +405,21 @@ class VisitedRule(Rule):
                       to_move = to_move,
                       to_relevance = to_relevance)
      
+class State:
+    """
+    Define un estado por el que puede pasar el agente.
+    """
+    def __init__(self,
+                 name = 'unnamed',
+                 func = None):
+        """
+        Se crea un nuevo estado.
+        :param name: nombre del estado
+        :type name: str
+        :param func: función que inidica si me encuentro en este estado.
+        
+        :rtype: State
+        """
+        self.name = name
+        self.func = func
+        

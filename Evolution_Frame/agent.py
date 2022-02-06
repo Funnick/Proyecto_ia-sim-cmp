@@ -16,7 +16,7 @@ class Agent(Object_base):
     Clase que reprensenta a los agentes de la simulación.
     """
 
-    def __init__(self, pos_x = -1, pos_y = -1, genes = [], behavior = None, rules = [], states = None):
+    def __init__(self, pos_x = -1, pos_y = -1, genes = [], behavior = None, rules = [], states = []):
         """
         Inicializa un agente en la posición (pos_x, pos_y) con una energía máxima (max_energy).
 
@@ -30,6 +30,7 @@ class Agent(Object_base):
         """
         Object_base.__init__(self, pos_x, pos_y)
         self.is_alive = True
+        self.is_agent = True
         self.age = 0
         self.food_eat_today = 0
         self.pregnant = []
@@ -44,15 +45,10 @@ class Agent(Object_base):
             self.genetic_code.get_gene('size').value*3)
 
         self.actual_state = []
-        self.states = states
-        if not states:
-            self.states = {}
-            self.set_default_states()
         if not behavior:
-            self.behavior = Behavior(rules)
+            self.behavior = Behavior(rules=rules, states=[])
         else: 
             self.behavior = behavior
-            self.behavior.agent = self
         
     def __str__(self):
         return "Agent"
@@ -107,11 +103,9 @@ class Agent(Object_base):
         for child in range(self.genetic_code.get_gene('fertility').value):    
             if randint(0, 1):
                 behavior = other_agent.behavior
-                states = other_agent.states
             else:
                 behavior = self.behavior
-                states = self.states
-            child_agent = Agent(behavior=behavior, states=states)
+            child_agent = Agent(behavior=behavior)
             child_agent.genetic_code = self.genetic_code + other_agent.genetic_code
             childs.append(child_agent)
             
@@ -125,7 +119,7 @@ class Agent(Object_base):
         :rtype: Agent
         :return: child_agent
         """
-        child_agent = Agent(-1, -1, behavior=self.behavior, states=self.states)
+        child_agent = Agent(-1, -1, behavior=self.behavior)
         child_agent.genetic_code = self.mutate()
         return child_agent
     
@@ -352,9 +346,9 @@ class Agent(Object_base):
         Retorna una lista con los nombres de todos los estados.
         
         :rtype: List[str,str,...,str]
-        :return: [state for state in self.states.keys()]
+        :return: [state for state in self.behavior.states.keys()]
         """
-        return [state for state in self.states.keys()]
+        return [state for state in self.behavior.states.keys()]
       
     def update_state(self):
         """
@@ -363,8 +357,8 @@ class Agent(Object_base):
         :rtype: None
         """
         self.actual_state = []
-        for state in self.states.keys():
-            if self.states[state].func(self):
+        for state in self.behavior.states.keys():
+            if self.behavior.states[state].func(self):
                 self.actual_state.append(state)
         
     def set_default_states(self):
@@ -435,21 +429,3 @@ class Footprint:
         :rtype: None
         """
         self.time -= 1
-class State:
-    """
-    Define un estado por el que puede pasar el agente.
-    """
-    def __init__(self,
-                 name = 'unnamed',
-                 func = None):
-        """
-        Se crea un nuevo estado.
-        :param name: nombre del estado
-        :type name: str
-        :param func: función que inidica si me encuentro en este estado.
-        
-        :rtype: State
-        """
-        self.name = name
-        self.func = func
-        

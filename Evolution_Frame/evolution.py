@@ -2,6 +2,8 @@ from world import World
 from action import DoNothing
 from random import shuffle
 from matplotlib import pyplot as plt
+from statistics import stdev
+from aux_meth import MapFunction
 
 
 class Simulator:
@@ -165,41 +167,52 @@ class Simulator:
         self.world.remove_tree()
         self.world.remove_footprints()
     
-    def simulate(self, rounds = 1, food_function = None, maping = [], plot = 0):
+    def simulate(self, 
+                 days = 1, 
+                 food_function = None, 
+                 maping = [MapFunction('alive', lambda agent: agent.is_alive)], 
+                 plot = False):
         """
         Corre una cantidad n de días de la simulación.
         
-        :param rounds: cantidad de rondas o días que se desean correr.
-        :type rounds: int
+        :param days: cantidad de rondas o días que se desean correr.
+        :type days: int
         :param food_function: función de distibución de la alimentación.
-
-        :rtype: None
+        :type food_function: function
+        :param maping: lista de funciones por las cuales se mapeará la simulación
+        :type maping: List[MapFunciton]
+        :param plot: si se desea graficar o no los datos obtenidos
+        :type plot: bool
+        
+        :rtype: List
+        :return: results
         """
-        agents = []
         if food_function:
             self.set_food_function(food_function)
             
-        for r in range(rounds):
+        for r in range(days):
             if not self.restrictions:
                 break
             self.world.add_food(self.food_function(self))
             self.simulate_one_round()
-            agents.append(self.get_number_of_agents())
             for func in maping:
                 func.elements.append(len(self.get_agents_that(func.func)))
                 
         if plot:
             for func in maping:
                 plt.plot([i for i in range(len(func.elements))], func.elements, '-', alpha=1.00, label=func.name)
-                plt.fill_between([i for i in range(len(func.elements))], func.elements, alpha=.25)
             leg = plt.legend(loc=9,ncol=2, mode="expand", shadow=True, fancybox=True)
             leg.get_frame().set_alpha(0.5)
             plt.grid()
             plt.xlabel('days')
             plt.ylabel('agents')
             plt.show()
+        
         self.end_simulation()
-        return agents
+        results = [func.elements for func in maping]
+        for func in maping:
+            func.elements = []
+        return results
                    
     def simulate_one_round(self):
         """
@@ -303,27 +316,6 @@ class Simulator:
         "Nothing":" ",
         "Tree": "T"
         }
-    
-class MapFunction:
-    """
-    Clase para crear funciones de mapeo, que filtren los
-    agentes según el comportamiento de una variable.
-    """
-    def __init__(self, name='unnamed', func = None):
-        """
-        Se crea una nueva función de mapeo.
-        
-        :param name: nombre que recibirá la función de mapeo
-        :type name: str
-        :param func: función de mapeo, que recibe un agente y retorna
-        True || False
-        :type func: function
-        
-        :rtype: MapFunction
-        """
-        self.name = name
-        self.func = func
-        self.elements = []
         
 class SimulatorMaster:
     """
@@ -361,16 +353,28 @@ class SimulatorMaster:
         self.agents_distribution = agents_distribution
         self.rounds = rounds
         
-    def run(self, plot = 0):
+    def run(self, 
+            plot = False, 
+            means = True, 
+            maping = [MapFunction('alive', lambda agent: agent.is_alive)],
+            food_func = None):
         """
         Corre n simulaciones con las mismas características.
-        :param plot: define si se desea graficar los resultados obtenidos
-        :type plot: int
+        :param plot: define si se desea graficar las curvas de cada simulación
+        :type plot: bool
+        :param means: define si se desea graficar las medias de cada simulación
+        :type means: bool
+        :param maping: conjunto de funciones de mapeo
+        :type maping: List[MapFunction]
+        :param food_func: función de distribución de alimento
+        :type food_func: function
         
         :rtype: list
-        :return: total_agents_by_simulation
+        :return: data_agents
         """
-        total_agents_by_simulation = []
+        if food_func:
+            self.food_distribution = food_func
+        data_agents = []
         for r in range(self.rounds):
             print("Comenzando la simulación:", r+1)
             s = Simulator()
@@ -379,22 +383,36 @@ class SimulatorMaster:
                 s.add_agent_to_simulation(a)
             agents=(s.simulate(self.days, 
                                      self.food_distribution, 
-                                     maping=[], 
+                                     maping=maping, 
                                      plot=0))
-            plt.plot([i for i in range(len(agents))], agents, 'b-', alpha=0.25)
-            total_agents_by_simulation.append(agents)
+            plt.plot([i for i in range(len(agents[0]))], agents[0], 'b-', alpha=0.15)
+            data_agents.append(agents)
         
-        mean_agents = []
-        for d in range(self.days):
-            total = 0
-            for s in total_agents_by_simulation:
-                total += s[d]
-            total /= len(total_agents_by_simulation) if len(total_agents_by_simulation)!=0 else 0
-            mean_agents.append(total)
-        plt.plot([i for i in range(len(mean_agents))], mean_agents, 'r-', alpha=1)
-        plt.grid()
-        plt.xlabel('days')
-        plt.ylabel('agents')
-        plt.show()
-        return total_agents_by_simulation
+        for var in range(len(maping)):
+            mean_agents = []
+            dev_up = []
+            dev_down = []
+            for d in range(self.days):
+                total = 0
+                in_day = []
+                for sim in data_agents:
+                    total += sim[var][d]
+                    in_day.append(sim[var][d])
+                total /= len(in_day) if len(in_day)!=0 else 0
+                dev = stdev(in_day)
+                dev_up.append(total + dev)
+                dev_down.append(total - dev)
+                mean_agents.append(total)
+            if plot:
+                plt.plot([i for i in range(len(mean_agents))], mean_agents, alpha=1, label = maping[var].name)
+            if means:
+                plt.fill_between([i for i in range(len(dev_up))],dev_up, dev_down, alpha=.25)
+        if plot or means:
+            plt.grid()
+            leg = plt.legend(loc=9,ncol=2, mode="expand", shadow=True, fancybox=True)
+            leg.get_frame().set_alpha(0.5)
+            plt.xlabel('days')
+            plt.ylabel('agents')
+            plt.show()
+        return data_agents
         

@@ -18,6 +18,9 @@ class Object_base:
         """
         self.pos_x = pos_x
         self.pos_y = pos_y
+        self.is_tree = False
+        self.is_food = False
+        self.is_agent = False
 
 
 class Food(Object_base):
