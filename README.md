@@ -89,41 +89,41 @@ Existe una clase `Action` que determina los cambios ocurridos en el mundo o el a
 
 ### Los genes 
 
-Como explicamos previamente, el código genético de cada individuo determina su comportamiento por lo que repercute de forma directa o indirecta en su comportamiento al incidir en las reglas que definen su `behavior`. Con el objetivo de poder variar parámetros dentro de las características de los individuos surge esta clase `Gene`, que va a representar cada una de estas características representativas del agente y la clase `Genetic_code` que representa al conjunto de los `Gene` que posee un `Agent` .
+Como explicamos previamente, el código genético de cada individuo determina en buena medida su actuar, al incidir directamente en las reglas que definen su `behavior`. Con el objetivo de poder variar parámetros dentro de las características de los individuos surge esta clase `Gene`, que va a representar cada uno de los genes del agente, y la clase `GeneticCode`, que representa al conjunto de estos genes.
 
-Cada Gene está definido por los valores mínimo y máximo que puede alcanzar de tipo enteros, el valor actual que posee, probabilidades de mutar y aumentar del tipo *float* y el tamaño del cambio que pueden llegar a realizar. La suma o unión de dos genes esta definida por default como el truncamiento a entero de la media de los valores de los genes. Al mutar un gene se devuelve un gen mutado con += el step que este posee en dependencia de una propiedad aleatoria sobrepase los umbrales de probabilidad de mutar y de aumentar, si solo muta decrecerá su valor y si muta y aumenta lo contrario. Además de poseer la posibilidad de implementar nuevas funciones de mutación para los mismos.
+Cada `Gene` está definido por los valores mínimo y máximo que puede alcanzar, el valor actual que posee,  estos de tipo entero, las probabilidades de mutar y mutar hacia arriba, de tipo *float*, y el tamaño del cambio que pueden llegar a realizar. La suma o unión de dos genes esta definida por default como el truncamiento a entero de la media de los valores de los genes. Al mutar un gen, se devuelve un nuevo gen su valor aumentado o decrecido, en correspondencia con los valores de aleatorios obtenidos. Además, `Gene` da la posibilidad de implementar nuevas funciones de mutación para si mismo.
 
 Dentro de los genes definidos para la simulación se encuentran:
 
-- Sense:  Define la capacidad del agente de percibir el medio que le rodea.
-- Size: Define su tamaño.
-- Speed:  Velocidad del agente lo que determina la cantidad de casillas que puede desplazarse por ronda.
-- Reproduction: Tipo de reproducción que posee el agente, sexual o asexual.
-- Life: Duración de la vida del agente.
-- Diet: Tipo de comida que consume, puede ser herbívoro, carnívoro u omnívoro.
-- Sex: Sexo del agente, posee tres estados asexual, sexual femenino y sexual masculino.
-- Fertility: Capacidad del agente de poseer un mayor número de descendientes.
-- Stamina: Cantidad de energía del agente necesaria para desplazarse.
+- `Sense`:  Define la capacidad del agente de percibir el medio que le rodea.
+- `Size`: Define su tamaño.
+- `Speed`:  Velocidad del agente, lo que determina la cantidad de casillas que puede desplazarse por ronda.
+- `Reproduction`: Tipo de reproducción que posee el agente, sexual o asexual.
+- `Life`: Duración de la vida del agente.
+- `Diet`: Tipo de comida que consume, puede ser herbívoro, carnívoro u omnívoro.
+- `Sex`: Sexo del agente, posee dos estados asexual o sexual.
+- `Fertility`: Capacidad del agente de poseer un mayor número de descendientes.
+- `Stamina`: Cantidad de energía del agente, necesaria para desplazarse.
 
 
 
 #### Tabla de valores por defecto de los genes 
 
-|     Gen      | min_value | max_value | value | chance_to_mutate | chance_to_go_up | step |
-| :----------: | :-------: | :-------: | :---: | :--------------: | :-------------: | :--: |
-|    Sense     |     1     |    10     |   5   |       0.5        |       0.5       |  1   |
-|     Size     |     1     |    10     |   5   |       0.5        |       0.5       |  1   |
-|    Speed     |     1     |    10     |   5   |       0.5        |       0.5       |  1   |
-| Reproduction |     1     |     2     |   1   |       0.5        |       0.9       |  1   |
-|     Life     |     1     |    20     |  10   |       0.5        |       0.5       |  1   |
-|     Diet     |     1     |     3     |   1   |       0.1        |       0.8       |  1   |
-|     Sex      |     1     |     2     |   1   |        1         |        0        |  1   |
-|  Fertility   |     1     |     8     |   4   |       0.5        |       0.5       |  1   |
-|   Stamina    |    100    |   1000    |  400  |       0.5        |       0.5       |  10  |
+|      Gen       | min_value | max_value | value | chance_to_mutate | chance_to_go_up | step |
+| :------------: | :-------: | :-------: | :---: | :--------------: | :-------------: | :--: |
+|    `Sense`     |     1     |    10     |   5   |       0.5        |       0.5       |  1   |
+|     `Size`     |     1     |    10     |   5   |       0.5        |       0.5       |  1   |
+|    `Speed`     |     1     |    10     |   5   |       0.5        |       0.5       |  1   |
+| `Reproduction` |     1     |     2     |   1   |       0.5        |       0.9       |  1   |
+|     `Life`     |     1     |    20     |  10   |       0.5        |       0.5       |  1   |
+|     `Diet`     |     1     |     3     |   1   |       0.1        |       0.8       |  1   |
+|     `Sex`      |     1     |     2     |   1   |        1         |        0        |  1   |
+|  `Fertility`   |     1     |     8     |   4   |       0.5        |       0.5       |  1   |
+|   `Stamina`    |    100    |   1000    |  400  |       0.5        |       0.5       |  10  |
 
-En los casos de *Sense*, *Size*, *Speed*, *Life*, *Fertility* y *Stamina* su capacidad de mutar estará definida por el modo estándar  explicado anteriormente. Pero en los casos de *Reproduction*, *Diet* y *Sex* tendrán sus propios métodos de mutación. La mutación en la *Reproduction* sólo posee dos valores que representan el 1 del tipo asexual y el 2 del tipo sexual y las probabilidades de pasar de 1 a 2 (9/10) son mucho mayores que de 2 a 1 (1/9). El caso de *Diet* esta compuesta por una terna 1 herbívoros, 2 carnívoros y 3 omnívoros, al poseer altas posibilidades de mutar hacia arriba estos tenderán a mutar hacia omnívoros dado que si están en estado 1 y mutan tendrán una probabilidad del 4/5 de pasar al estado 3, ocurre lo mismo de con 2 con mayor tendencia hacia estado 3, y en el caso de poseer alimentación omnívora tendrá igual oportunidad de pasar a 1 o 2. El *Sex* tiene dos estados 1 femenino ♀ y 2 masculino ♂. 
+En los casos de *Sense*, *Size*, *Speed*, *Life*, *Fertility* y *Stamina*, su capacidad de mutar estará definida por el modo estándar explicado anteriormente. Pero en los casos de *Reproduction*, *Diet* y *Sex*, estos tendrán sus propios métodos de mutación. La mutación en la *Reproduction* sólo posee dos valores que representan el 1 del tipo asexual y el 2 del tipo sexual, y las probabilidades de pasar de 1 a 2 (9/10) son mucho mayores que de 2 a 1 (1/9). El caso de *Diet* esta compuesta por una terna 1 herbívoros, 2 carnívoros y 3 omnívoros, al poseer altas posibilidades de mutar hacia arriba estos tenderán a mutar hacia omnívoros dado que si están en estado 1 y mutan tendrán una probabilidad del 4/5 de pasar al estado 3, ocurre lo mismo de con 2 con mayor tendencia hacia estado 3, y en el caso de poseer alimentación omnívora tendrá igual oportunidad de pasar a 1 o 2. El *Sex* tiene dos estados 1 femenino ♀ y 2 masculino ♂, los cuales toman con igual probabilidad cualquiera de los dos valores. 
 
-El `Genetic_code` está compuesto por un diccionario de nombre del gen a `Gene` y será definido por una lista de genes no predeterminados definidos por el usuario que serán combinados con los estándares. Además de poseer la posibilidad de unir dos cadenas, mutar todos los genes de una cadena, preguntar por la existencia del algún `Gene` .
+El `GeneticCode` está compuesto por un diccionario de nombre del gen a `Gene`, y será definido por una lista de genes no predeterminados descritos por el usuario, que serán combinados con los estándares. Además de brindar las opciones de unir dos cadenas, mutar todos los genes de una cadena y preguntar por la existencia del algún `Gene` .
 
 ### El comportamiento
 
@@ -169,23 +169,27 @@ Los estados predeterminados son:
 
 ### Las marcas en el suelo
 
-También encontramos la clase `Footprint`, la cual se usa para representar las pisadas dejadas por un agente al trasladarse por una casilla, usada para ayudar a las agentes a tener un método de orientación dentro del terreno, ya que los agentes se mueven buscando comida y es probable que seguir a uno nos lleve a una buena posición.
+También encontramos la clase `Footprint`, la cual se usa para representar las pisadas dejadas por un agente al trasladarse por una casilla, usada para ayudar a las agentes a tener un método de orientación dentro del terreno, ya que los agentes se mueven buscando comida y es probable que seguir a uno nos lleve a una buena posición. Funciona parecido a la idea de la metaheurística de la colonia de hormigas.
 
 ### El simulador
 
-El simulador es la clase que controla los procesos internos de la simulación, la pone a funcionar es la que posee al mundo y dentro de este, los agentes. Esta definida por un `world`, un conjunto de restricciones, los agentes el ciclo o día actual de la simulación y una función de comida. Entre las prestaciones con las que cuenta además de las de iniciar nuevos mundos definir una función de comida que nos permite determinar cuanta comida queremos que se genere dentro del tablero según que ciclo,  la posibilidad de agregar ciertas restricciones a la simulación para hacerla mas restrictiva, adicionar agentes, eliminarlos etc. 
+`Simulator` es la clase que controla los procesos internos de la simulación, la pone a funcionar, es la que posee al mundo (`world`) y a los agentes. Además, posee otras propiedades como el día actual de la simulación, alguna función de restricción para detener la simulación, y una función que se encargará de distribuir la comida en cada ciclo, o día. Tenemos otros métodos, los cuales se basan fundamentalmente en variar cada uno de los atributos de la simulación, entre ellos, la adición o eliminación de agentes, etc. 
 
-Cada simulación esta dividida en días o ciclos, por cada día se pasa a ubicar la comida en los `Tiles` a partir de la función si esta existe, se simula una ronda donde cada uno de los agentes ejecuta una `Action`, se eliminan de esta aquellos que no pudieron llegar a conseguir comida, se reproducen aquellos que cumplan las condiciones para ello y se resetean sus estados para la próxima ronda así hasta que se llega al final de los días seleccionados por el usuario. Las estadísticas de cada unas de estas rondas son recogidas para luego ser mostradas. 
+Cada simulación esta dividida en días o ciclos, por cada día se pasa a ubicar la comida en los `Tiles` a partir de la función, se simula una ronda donde cada uno de los agentes ejecuta un plan de `Actions`, se eliminan de esta aquellos que no pudieron llegar a conseguir comida, se reproducen aquellos que cumplan las condiciones para ello y se reinician sus estados para la próxima ronda, así hasta que se llega al final de los días seleccionados por el usuario. Las estadísticas de cada unas de estas rondas son recogidas para luego ser mostradas. 
 
-[FALTA]
+Un detalle importante son las funciones de filtrado de agentes, con estas es que logramos concentrarnos en características específicas de estos, y el estudio del comportamiento de la simulación se nos hace más completo.
 
-[aqui pon el Master simulation que tuve que cambiarle el nombre pq no sabia si era el maestro simulador Simulator Master como tu lo tenias o Master simulation como lo traduje yo de tu docstring]   
+### El simulador maestro
 
+La clase `SimulatorMaster` es la clase utilizada para generar un conjunto de simulaciones con las mismas características, y poder extraer de ellas cuáles son los comportamientos generales que deben esperarse dadas unas condiciones iniciales. Su método `run` no hace más que ejecutar dicho modelo de simulación una cantidad de rondas preestablecidas, y luego, son mostradas y graficadas las estadísticas generales obtenidas tras todas las corridas.
 
+En la configuración estándar, lo que es mostrado es la media de comportamiento de las variables a observar por simulación, y además una banda de valores que se comprenden entre la media y la desviación típica.
 
 ## Manual de uso y ejemplos
 
-### Ejemplo 1
+### Uso del Framework en Python puro
+
+#### Ejemplo 1
 
 Definir un agente.
 
@@ -193,7 +197,7 @@ Definir un agente.
 agent_1 = evolution.Agent()
 ```
 
-### Ejemplo 2
+#### Ejemplo 2
 
 Definir nuevos genes y con ellos definir un agente.
 
@@ -203,7 +207,7 @@ gen_2 = evolution.Diet(value=2, chance_to_go_up=1)
 agent_2 = evolution.Agent(genes=[gen_1, gen_2])
 ```
 
-### Ejemplo 3
+#### Ejemplo 3
 
 Establecer un comportamiento a un nuevo agente.
 
@@ -212,7 +216,7 @@ behavior_1 = evolution.Behavior()
 agent_3 = evolution.Agent(behavior = behavior_1)
 ```
 
-### Ejemplo 4
+#### Ejemplo 4
 
 ```python
 def diet(agent, element):
@@ -232,7 +236,7 @@ agent_4 = evolution.Agent(genes=[gen_1, gen_2], behavior=behavior_2)
 
 
 
-### Ejemplo 5
+#### Ejemplo 5
 
 Definir un agente a partir de genes y reglas definidas.
 
@@ -242,7 +246,7 @@ agent_5 = evolution.Agent(genes=[gen_1], rules=[rule_1, rule_2])
 
 
 
-### Ejemplo 6
+#### Ejemplo 6
 
 Definición de varias funciones de filtrado de agentes.
 
@@ -279,13 +283,13 @@ def func4(ag: evolution.Agent):
 
 
 
-### Ejemplo 7
+#### Ejemplo 7
 
 Crear un simulador en un mundo de 50x50.
 
 Define una función de comida.
 
-Agrega 5 agentes y corre dicha simulación por 100 días mapeando los agentes que cumplen las funciones 1 2 3 y 4.
+Agrega 5 agentes y corre dicha simulación por 100 días mapeando los agentes que cumplen las funciones 1, 2, 3 y 4.
 
 ```python
 s = evolution.Simulator()
@@ -309,15 +313,21 @@ s.simulate(days = 100,
 
 
 
-### Ejemplo 8
+#### Ejemplo 8
 
-[FALTA]
+Se crean nuevas reglas para los enemigos y las celdas visitadas.
+
+Se crea un behavior modificado con las reglas nuevas.
+
+Se define una función de distribución de agentes.
+
+Se crea una simulación maestra, con 10 árboles iniciales, 30 rondas de simulaciones, y una duración de 100 días para cada una.
 
 ```python
 enemies = evolution.EnemiesRule(to_relevance=lambda *args: -1)
 visited = evolution.VisitedRule(to_relevance=lambda *args: 1)
 
-behavior_ = evolution.Behavior()
+behavior_ = evolution.Behavior(rules=[enemies,visited])
 def func_agent():
       return [evolution.Agent() 
               for i in range(50)]

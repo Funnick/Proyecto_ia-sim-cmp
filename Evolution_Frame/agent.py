@@ -1,7 +1,7 @@
 from object_base import Object_base
 from action import MoveNorth, MoveSouth, MoveWest, MoveEast, Eat, HaveSex, DoNothing
 from random import randint
-from gene import Genetic_code
+from gene import GeneticCode
 from behavior import Behavior
 
 directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
@@ -25,9 +25,13 @@ class Agent(Object_base):
         :param pos_y: coordenada y del agente
         :type pos_y: int
         :param genes: lista de genes que serán pasados al agente
-        :param behavior: comportamiento que será pasado al agente 
+        :type genes: list
+        :param behavior: comportamiento que será pasado al agente
+        :type behavior: Behavior 
         :param rules: conjunto de reglas que será pasado al agente
+        :type rules: list
         :param states: estados del agente
+        :type states: list
 
         :rtype: Agent
         """
@@ -64,7 +68,7 @@ class Agent(Object_base):
         
         :rtype: None
         """
-        genetic = Genetic_code(genes = genes)
+        genetic = GeneticCode(genes = genes)
         self.genetic_code = genetic
     
     def set_gen(self, gene):

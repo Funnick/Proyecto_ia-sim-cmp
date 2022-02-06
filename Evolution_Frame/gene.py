@@ -351,7 +351,7 @@ class Stamina(Gene):
         return 'stamina'  
     
     
-class Genetic_code:
+class GeneticCode:
     """
     Clase dedicada a describir una cadena de genes, o
     código genético.
@@ -403,7 +403,7 @@ class Genetic_code:
         :rtype: GeneticCode
         :return: new_genetic_code
         """
-        new_genetic_code = Genetic_code()
+        new_genetic_code = GeneticCode()
         new_chain = {}
         for gene in self.chain.keys():
             if random() < 0.5:
@@ -435,7 +435,7 @@ class Genetic_code:
         :rtype: GeneticCode
         :return: new_chain
         """
-        new_chain = Genetic_code()
+        new_chain = GeneticCode()
         for gene in self.chain.keys():
             new_chain.chain[gene] = self.chain[gene].mutate
         return new_chain

@@ -440,8 +440,9 @@ class MasterSimulator:
                 total = 0
                 in_day = []
                 for sim in data_agents:
-                    total += sim[var][d]
-                    in_day.append(sim[var][d])
+                    if d <= len(sim[var]):
+                        total += sim[var][d]
+                        in_day.append(sim[var][d])
                 total /= len(in_day) if len(in_day)!=0 else 0
                 dev = stdev(in_day)
                 dev_up.append(total + dev)

@@ -91,7 +91,7 @@ s.simulate(days = 100,
 enemies = evolution.EnemiesRule(to_relevance=lambda *args: -1)
 visited = evolution.VisitedRule(to_relevance=lambda *args: 1)
 
-behavior_ = evolution.Behavior()
+behavior_ = evolution.Behavior(rules=[enemies,visited])
 def func_agent():
       return [evolution.Agent() 
               for i in range(50)]
