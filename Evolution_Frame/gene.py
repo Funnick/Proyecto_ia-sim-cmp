@@ -220,7 +220,7 @@ class Life(Gene):
 class Diet(Gene):
     """
     Gen que describe el tipo de alimentación de un
-    agente, o sea, hervívoro, carnívoro o omnívoro.
+    agente, o sea, herbívoro, carnívoro u omnívoro.
     """
     def __init__(self,
                  min_level = 1,
@@ -273,7 +273,7 @@ class Sex(Gene):
     """
     Gen que describe el sexo del agente. Poseerá
     tres estados, 1 si el agente es asexual, 2 si
-    es sexual y hembra, 3 si es sexual y macho.
+    es sexual y femenino, 3 si es sexual y masculino.
     """
     def __init__(self,
                  min_level = 1,
@@ -306,7 +306,7 @@ class Sex(Gene):
    
 class Fertility(Gene):
     """
-    Gen que describe la capacidad del agente parir
+    Gen que describe la capacidad del agente engendrar
     uno o más hijos.
     """
     def __init__(self,
@@ -351,7 +351,7 @@ class Stamina(Gene):
         return 'stamina'  
     
     
-class GeneticCode:
+class Genetic_code:
     """
     Clase dedicada a describir una cadena de genes, o
     código genético.
@@ -403,7 +403,7 @@ class GeneticCode:
         :rtype: GeneticCode
         :return: new_genetic_code
         """
-        new_genetic_code = GeneticCode()
+        new_genetic_code = Genetic_code()
         new_chain = {}
         for gene in self.chain.keys():
             if random() < 0.5:
@@ -435,7 +435,7 @@ class GeneticCode:
         :rtype: GeneticCode
         :return: new_chain
         """
-        new_chain = GeneticCode()
+        new_chain = Genetic_code()
         for gene in self.chain.keys():
             new_chain.chain[gene] = self.chain[gene].mutate
         return new_chain
@@ -458,4 +458,3 @@ class GeneticCode:
         :return: True | False
         """
         return str(gene) in self.code().keys()
-    

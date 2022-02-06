@@ -23,7 +23,6 @@ class Simulator:
         self.agents = []
         self.active_agents = []
         self.day = 0
-        self.cycle = 0
         self.restrictions = True
         self.food_function = None
 
@@ -196,7 +195,7 @@ class Simulator:
             self.world.add_food(self.food_function(self))
             self.simulate_one_round()
             for func in maping:
-                func.elements.append(len(self.get_agents_that(func.func)))
+                func.elements.append(len(self.get_agents(func.func)))
                 
         if plot:
             for func in maping:
@@ -230,7 +229,7 @@ class Simulator:
         self.reproduction_agents()
         self.reset_agents_attributes()
         
-    def get_agents_that(self, func):
+    def get_agents(self, func):
         """
         Retorna los agentes que cumplen con cierto predicado.
         :param func: Función que devuelve True or False
@@ -317,7 +316,7 @@ class Simulator:
         "Tree": "T"
         }
         
-class SimulatorMaster:
+class Master_simulation:
     """
     Clase que permitirá correr varias simulaciones con las
     mismas características para evaluar el comportamiento

@@ -102,7 +102,7 @@ def func_agent():
       return [agent.Agent() 
               for i in range(50)]
       
-sm = evolution.SimulatorMaster(rounds=30, days=100)
+sm = evolution.Master_simulation(rounds=30, days=100)
 sm.food_distribution = func_food
 sm.agents_distribution = func_agent
 
