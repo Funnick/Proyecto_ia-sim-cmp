@@ -42,8 +42,8 @@ class Simulator:
         """
         self.world = World(dimension_x, dimension_y, trees)
         
-        # Función predeterminada de adición de alimentos (10% del mapa)
-        self.food_function = (dimension_x * dimension_y * 10) / 100
+        # Función predeterminada de adición de alimentos (20% del mapa)
+        self.food_function = lambda *args: int((dimension_x * dimension_y * 20) / 100)
 
     def set_food_function(self, func):
         """
@@ -175,7 +175,7 @@ class Simulator:
                  food_function = None, 
                  maping = [], 
                  plot = False,
-                 dimensions = None):
+                 dimensions = (50,50)):
         """
         Corre una cantidad n de días de la simulación.
         
@@ -218,7 +218,6 @@ class Simulator:
             plt.ylabel('agents')
             plt.show()
         
-        self.end_simulation()
         results = [func.elements for func in maping]
         for func in maping:
             func.elements = []
@@ -419,7 +418,6 @@ class MasterSimulator:
             self.food_distribution = food_func
         data_agents = []
         for r in range(self.rounds):
-            print("Comenzando la simulación:", r+1)
             s = Simulator()
             s.create_world(self.dimensions[0], self.dimensions[1], trees=self.trees)
             for a in self.agents_distribution():
@@ -446,7 +444,7 @@ class MasterSimulator:
                 total /= len(in_day) if len(in_day)!=0 else 0
                 dev = stdev(in_day)
                 dev_up.append(total + dev)
-                dev_down.append(total - dev)
+                dev_down.append(max(total - dev, 0))
                 mean_agents.append(total)
             
             if means:

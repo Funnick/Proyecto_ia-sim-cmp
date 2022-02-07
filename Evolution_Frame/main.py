@@ -78,13 +78,13 @@ for i in range(5):
     s.add_agent_to_simulation(evolution.Agent())
 
 
-s.simulate(days = 100,
+"""s.simulate(days = 100,
            food_function=func_food,
            maping=[evolution.MapFunction('speed > 5',func),
                    evolution.MapFunction('size <= 5',func2),
                    evolution.MapFunction('alive',func3),
                    evolution.MapFunction('sexual & fert > 4',func4)],
-           plot=1)
+           plot=1)"""
 # -------------------------------------------------------------
 
 # Ejemplo 8 ---------------------------------------------------
@@ -100,7 +100,5 @@ sm = evolution.MasterSimulator(trees=10, rounds=30, days=100)
 sm.food_distribution = func_food
 sm.agents_distribution = func_agent
 
-sm.run(maping=[evolution.MapFunction('alive', func3),
-            evolution.MapFunction('size <= 5',func2),
-            evolution.MapFunction('speed > 5',func)])
+sm.run(plot=1,maping=[evolution.MapFunction('alive', func3)])
 # -------------------------------------------------------------

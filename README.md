@@ -321,7 +321,7 @@ Se crea un behavior modificado con las reglas nuevas.
 
 Se define una función de distribución de agentes.
 
-Se crea una simulación maestra, con 10 árboles iniciales, 30 rondas de simulaciones, y una duración de 100 días para cada una.
+Se crea una simulación maestra, con 10 árboles iniciales, 30 rondas de simulaciones, y una duración de 100 días 
 
 ```python
 enemies = evolution.EnemiesRule(to_relevance=lambda *args: -1)
@@ -343,8 +343,20 @@ sm.run(maping=[evolution.MapFunction('alive', func3),
 
 ### Ejemplos de los gráficos
 
+#### Simulaciones independientes
+
 <img src="./source/Figure_1.png" alt="Ejemplos" style="zoom:60%;" />
 
 <img src="./source/Figure_2.png" alt="Ejemplos" style="zoom:70%;" />
 
 <img src="./source/Figure_3.png" alt="Ejemplos" style="zoom:70%;" />
+
+#### Simulaciones maestras
+
+`plot = means = True`
+
+<img src="/media/manoly/Data/3.2 CC/PROYECTO/Proyecto_ia-sim-cmp/source/Figure_4.png" style="zoom:70%;" />
+
+<img src="/media/manoly/Data/3.2 CC/PROYECTO/Proyecto_ia-sim-cmp/source/Figure_5.png" style="zoom:70%;" />
+
+<img src="/media/manoly/Data/3.2 CC/PROYECTO/Proyecto_ia-sim-cmp/source/Figure_6.png" style="zoom:70%;" />
