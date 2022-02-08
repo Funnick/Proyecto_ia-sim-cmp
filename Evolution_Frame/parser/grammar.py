@@ -1,6 +1,6 @@
 from typing import Iterable, List, Set, Optional
 
-from token_ import TokenType
+from .token_ import TokenType
 
 
 class Symbol:

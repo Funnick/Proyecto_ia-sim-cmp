@@ -1,6 +1,6 @@
 from typing import Dict, Tuple, List
-from cst import NoTerminalNode, TerminalNode
-from grammar import (
+from .cst import NoTerminalNode, TerminalNode
+from .grammar import (
     ContextFreeGrammar,
     NoTerminal,
     Production,
@@ -8,7 +8,7 @@ from grammar import (
     Terminal,
     SentenceForm,
 )
-from token_ import TokenType, Token
+from .token_ import TokenType, Token
 
 
 def build_parse_table(

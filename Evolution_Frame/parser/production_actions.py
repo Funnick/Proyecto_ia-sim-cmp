@@ -1,5 +1,5 @@
-import ast_nodes
-from ast_nodes import built_in_fun
+from .ast_nodes import *
+#from .ast_nodes import built_in_fun
 
 # program -> Program { block_stmt }
 def action_1(node):
@@ -10,7 +10,7 @@ def action_1(node):
 # block_stmt -> stmt block_stmt'
 def action_2(node):
     node.childs[1].l_attribute = [node.childs[0].get_ast()]
-    node.ast = ast_nodes.BlockStmt(node.childs[1].get_ast())
+    node.ast = BlockStmt(node.childs[1].get_ast())
     return node.ast
 
 
@@ -57,13 +57,13 @@ def action_5(node):
 
 # equality' -> != cmp
 def action_6(node):
-    node.ast = ast_nodes.NotEqual(node.l_attribute, node.childs[1].get_ast())
+    node.ast = NotEqual(node.l_attribute, node.childs[1].get_ast())
     return node.ast
 
 
 # equality' -> == cmp
 def action_7(node):
-    node.ast = ast_nodes.EqualEqual(node.l_attribute, node.childs[1].get_ast())
+    node.ast = EqualEqual(node.l_attribute, node.childs[1].get_ast())
     return node.ast
 
 
@@ -83,31 +83,31 @@ def action_8(node):
 
 # cmp' -> > term
 def action_9(node):
-    node.ast = ast_nodes.Greater(node.l_attribute, node.childs[1].get_ast())
+    node.ast = Greater(node.l_attribute, node.childs[1].get_ast())
     return node.ast
 
 
 # cmp' -> >= term
 def action_10(node):
-    node.ast = ast_nodes.GreaterEqual(node.l_attribute, node.childs[1].get_ast())
+    node.ast = GreaterEqual(node.l_attribute, node.childs[1].get_ast())
     return node.ast
 
 
 # cmp' -> < term
 def action_11(node):
-    node.ast = ast_nodes.Less(node.l_attribute, node.childs[1].get_ast())
+    node.ast = Less(node.l_attribute, node.childs[1].get_ast())
     return node.ast
 
 
 # cmp' -> <= term
 def action_12(node):
-    node.ast = ast_nodes.LessEqual(node.l_attribute, node.childs[1].get_ast())
+    node.ast = LessEqual(node.l_attribute, node.childs[1].get_ast())
     return node.ast
 
 
 # term' -> + factor term'
 def action_13(node):
-    node.childs[2].l_attribute = ast_nodes.Sum(
+    node.childs[2].l_attribute = Sum(
         node.l_attribute, node.childs[1].get_ast()
     )
     node.ast = node.childs[2].get_ast()
@@ -116,7 +116,7 @@ def action_13(node):
 
 # term' -> - factor term'
 def action_14(node):
-    node.childs[2].l_attribute = ast_nodes.Sub(
+    node.childs[2].l_attribute = Sub(
         node.l_attribute, node.childs[1].get_ast()
     )
     node.ast = node.childs[2].get_ast()
@@ -125,7 +125,7 @@ def action_14(node):
 
 # factor' -> * unary factor'
 def action_15(node):
-    node.childs[2].l_attribute = ast_nodes.Mult(
+    node.childs[2].l_attribute = Mult(
         node.l_attribute, node.childs[1].get_ast()
     )
     node.ast = node.childs[2].get_ast()
@@ -134,7 +134,7 @@ def action_15(node):
 
 # factor' -> / unary factor'
 def action_16(node):
-    node.childs[2].l_attribute = ast_nodes.Div(
+    node.childs[2].l_attribute = Div(
         node.l_attribute, node.childs[1].get_ast()
     )
     node.ast = node.childs[2].get_ast()
@@ -143,37 +143,37 @@ def action_16(node):
 
 # unary -> - unary
 def action_17(node):
-    node.ast = ast_nodes.Minus(node.childs[1].get_ast())
+    node.ast = Minus(node.childs[1].get_ast())
     return node.ast
 
 
 # unary -> ! unary
 def action_23(node):
-    node.ast = ast_nodes.Not(node.childs[1].get_ast())
+    node.ast = Not(node.childs[1].get_ast())
     return node.ast
 
 
 # primary -> Number
 def action_18(node):
-    node.ast = ast_nodes.Number(node.childs[0].lexeme)
+    node.ast = Number(node.childs[0].lexeme)
     return node.ast
 
 
 # primary -> String
 def action_19(node):
-    node.ast = ast_nodes.String(node.childs[0].lexeme)
+    node.ast = String(node.childs[0].lexeme)
     return node.ast
 
 
 # primary -> Bool
 def action_24(node):
-    node.ast = ast_nodes.Bool(node.childs[0].lexeme)
+    node.ast = Bool(node.childs[0].lexeme)
     return node.ast
 
 
 # primary -> Nil
 def action_20(node):
-    node.ast = ast_nodes.Nil()
+    node.ast = Nil()
     return node.ast
 
 
@@ -185,7 +185,7 @@ def action_21(node):
 
 # print_stmt -> print expression ;
 def action_26(node):
-    node.ast = ast_nodes.PrintStmt(node.childs[1].get_ast())
+    node.ast = PrintStmt(node.childs[1].get_ast())
     return node.ast
 
 
@@ -198,13 +198,13 @@ def action_27(node):
 
 # var_declaration_ -> = expression
 def action_28(node):
-    node.ast = ast_nodes.VarDeclaration(node.l_attribute, node.childs[1].get_ast())
+    node.ast = VarDeclaration(node.l_attribute, node.childs[1].get_ast())
     return node.ast
 
 
 # var_declaration_ -> eps
 def action_29(node):
-    node.ast = ast_nodes.VarDeclaration(node.l_attribute)
+    node.ast = VarDeclaration(node.l_attribute)
     return node.ast
 
 
@@ -217,7 +217,7 @@ def action_30(node):
 
 # assigment -> redefine ID = assigment
 def action_31(node):
-    node.ast = ast_nodes.Redefine(node.childs[1].lexeme, node.childs[3].get_ast())
+    node.ast = Redefine(node.childs[1].lexeme, node.childs[3].get_ast())
     return node.ast
 
 
@@ -233,7 +233,7 @@ def action_32(node):
 
 # else_stmt -> else { block_stmt }
 def action_33(node):
-    node.ast = ast_nodes.IfElse(
+    node.ast = IfElse(
         node.l_attribute[0],
         node.l_attribute[1],
         node.childs[2].get_ast(),
@@ -243,13 +243,13 @@ def action_33(node):
 
 # else_stmt -> eps
 def action_34(node):
-    node.ast = ast_nodes.If(node.l_attribute[0], node.l_attribute[1])
+    node.ast = If(node.l_attribute[0], node.l_attribute[1])
     return node.ast
 
 
 # logic_or' -> or logic_and logic_or'
 def action_35(node):
-    node.childs[2].l_attribute = ast_nodes.Or(
+    node.childs[2].l_attribute = Or(
         node.l_attribute, node.childs[1].get_ast()
     )
     node.ast = node.childs[2].get_ast()
@@ -258,7 +258,7 @@ def action_35(node):
 
 # logic_and' -> and equality logic_and'
 def action_36(node):
-    node.childs[2].l_attribute = ast_nodes.And(
+    node.childs[2].l_attribute = And(
         node.l_attribute, node.childs[1].get_ast()
     )
     node.ast = node.childs[2].get_ast()
@@ -267,7 +267,7 @@ def action_36(node):
 
 # while_stmt -> while ( expression ) { block_stmt }
 def action_37(node):
-    node.ast = ast_nodes.While(node.childs[2].get_ast(), node.childs[5].get_ast())
+    node.ast = While(node.childs[2].get_ast(), node.childs[5].get_ast())
     return node.ast
 
 
@@ -279,7 +279,7 @@ def action_38(node):
 
 # function -> ID ( arg_list ) { block_stmt }
 def action_39(node):
-    node.ast = ast_nodes.FuntionDeclaration(
+    node.ast = FuntionDeclaration(
         node.childs[0].lexeme, node.childs[2].get_ast(), node.childs[5].get_ast()
     )
     return node.ast
@@ -308,7 +308,7 @@ def action_42(node):
 
 # call -> ( arg_expression )
 def action_43(node):
-    node.ast = ast_nodes.Call(node.l_attribute, node.childs[1].get_ast())
+    node.ast = Call(node.l_attribute, node.childs[1].get_ast())
     return node.ast
 
 
@@ -329,7 +329,7 @@ def action_45(node):
 
 # call -> eps
 def action_46(node):
-    node.ast = ast_nodes.Call(node.l_attribute, [])
+    node.ast = Call(node.l_attribute, [])
     return node.ast
 
 
@@ -341,13 +341,13 @@ def action_47(node):
 
 # return_value -> expression
 def action_48(node):
-    node.ast = ast_nodes.Return(node.childs[0].get_ast())
+    node.ast = Return(node.childs[0].get_ast())
     return node.ast
 
 
 # return_value -> eps
 def action_49(node):
-    node.ast = ast_nodes.Return()
+    node.ast = Return()
     return node.ast
 
 
@@ -359,7 +359,7 @@ def action_50(node):
 
 # predicate -> AgentPredicate ID
 def action_51(node):
-    node.ast = ast_nodes.AgentPredicate(node.childs[1].lexeme)
+    node.ast = AgentPredicate(node.childs[1].lexeme)
     return node.ast
 
 

@@ -1,8 +1,8 @@
-from object_base import Object_base
-from action import MoveNorth, MoveSouth, MoveWest, MoveEast, Eat, HaveSex, DoNothing
+from .object_base import Object_base
+from .action import MoveNorth, MoveSouth, MoveWest, MoveEast, Eat, HaveSex, DoNothing
 from random import randint
-from gene import GeneticCode
-from behavior import Behavior
+from .gene import GeneticCode
+from .behavior import Behavior
 
 directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 directions_actions = [

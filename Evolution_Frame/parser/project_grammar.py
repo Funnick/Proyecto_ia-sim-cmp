@@ -1,6 +1,6 @@
 from lib2to3.pgen2.grammar import Grammar
 from unittest.mock import sentinel
-from grammar import (
+from .grammar import (
     Terminal,
     NoTerminal,
     ContextFreeProductionDict,
@@ -8,8 +8,8 @@ from grammar import (
     SentenceForm,
     Production,
 )
-from token_ import TokenType
-from production_actions import *
+from .token_ import TokenType
+from .production_actions import *
 
 # Start Symbol
 program = NoTerminal("program")

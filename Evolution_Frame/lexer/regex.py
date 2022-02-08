@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
-from automata import *
+from .automata import *
 
 
 class Regex(ABC):

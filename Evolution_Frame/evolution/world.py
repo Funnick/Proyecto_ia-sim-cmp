@@ -1,5 +1,5 @@
-from object_base import *
-from aux_meth import generate_elevation_matrix
+from .object_base import *
+from .aux_meth import generate_elevation_matrix
 from random import randint, random
 
 

@@ -1,9 +1,9 @@
-from world import *
-from action import *
-from object_base import *
-from gene import *
-from behavior import *
-from agent import *
+from .world import *
+from .action import *
+from .object_base import *
+from .gene import *
+from .behavior import *
+from .agent import *
 from random import shuffle
 from matplotlib import pyplot as plt
 from statistics import stdev

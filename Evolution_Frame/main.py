@@ -1,7 +1,7 @@
-from lexical_analyzer import tokenize
-from project_grammar import gr
-from LL_parse import build_parse_table, LL_parse
-from project_context import pc
+from lexer.lexical_analyzer import tokenize
+from parser.project_grammar import gr
+from parser.LL_parse import build_parse_table, LL_parse
+from parser.project_context import pc
 
 tokens = tokenize("program1.txt")
 parse_table = build_parse_table(gr)

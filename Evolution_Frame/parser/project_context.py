@@ -1,6 +1,6 @@
 from multiprocessing import context
-from context import Context
-from built_in_fun_parse import *
+from .context import Context
+from .built_in_fun_parse import *
 
 built_in_fun = {
     "create_simulator": create_simulator,

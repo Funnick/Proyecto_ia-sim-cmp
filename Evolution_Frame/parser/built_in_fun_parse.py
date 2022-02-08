@@ -1,7 +1,7 @@
-import evolution
-import agent
+from evolution import evolution
+from evolution import agent
 from typing import Any
-from utils import ReturnException
+from .utils import ReturnException
 
 
 def create_simulator(project_context, args):

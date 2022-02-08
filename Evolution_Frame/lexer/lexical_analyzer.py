@@ -1,7 +1,7 @@
 from typing import List, Dict
-from token_ import Token, TokenMatch, TokenType
-from regex import convert_str_in_regex, convert_regex_in_automata
-from automata import (
+from parser.token_ import Token, TokenMatch, TokenType
+from .regex import convert_str_in_regex, convert_regex_in_automata
+from .automata import (
     Automata,
     FiniteState,
     State,
@@ -10,8 +10,7 @@ from automata import (
     TransitionFunction,
     convert_NFA_in_DFA,
 )
-from lexer import Lexer
-from math import inf
+from .lexer import Lexer
 
 matches = [
     # Program

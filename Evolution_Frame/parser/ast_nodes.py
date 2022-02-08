@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-from context import DefineContext
-from project_context import built_in_fun, built_in_fun_type
-from utils import ReturnException
+from .context import DefineContext
+from .project_context import built_in_fun, built_in_fun_type
+from .utils import ReturnException
 
 define_context = DefineContext()
 define_context.context = set(built_in_fun.keys())

@@ -1,5 +1,5 @@
-from object_base import Food, Tree
-from aux_meth import manhattan, mean
+from .object_base import Food, Tree
+from .aux_meth import manhattan, mean
 
 class Behavior:
     """
