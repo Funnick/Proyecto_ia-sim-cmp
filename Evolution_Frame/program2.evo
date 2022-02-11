@@ -1,0 +1,16 @@
+simulator s = create_simulator();
+agent a = create_agent();
+create_world(s, 10, 10, 0);
+add_agent_to_simulation(s, a);
+
+fun bool func(agent ag){
+    if (get_agent_value_gene(ag, "size") <= 5){
+        return True;
+    }
+    return False;
+}
+list l = create_list();
+add_elem_to_list(l, "size <= 5");
+list f = create_list();
+add_elem_to_list(f, func);
+simulate_with_mf(s, l, f);

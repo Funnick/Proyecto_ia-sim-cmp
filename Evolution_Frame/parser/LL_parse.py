@@ -22,7 +22,7 @@ def build_parse_table(
             for a in g.first(production.body):
                 if a.__eq__(eps):
                     for b in g.follow(prod[0]):
-                        parse_table[prod[0], b.token_type] = production
+                        parse_table[(prod[0], b.token_type)] = production
                 else:
                     parse_table[(prod[0], a.token_type)] = production
 

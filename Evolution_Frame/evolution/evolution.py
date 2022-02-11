@@ -442,7 +442,7 @@ class MasterSimulator:
                         total += sim[var][d]
                         in_day.append(sim[var][d])
                 total /= len(in_day) if len(in_day) != 0 else 0
-                dev = stdev(in_day)
+                dev = stdev(in_day) if len(in_day)>1 else in_day[0]
                 dev_up.append(total + dev)
                 dev_down.append(max(total - dev, 0))
                 mean_agents.append(total)

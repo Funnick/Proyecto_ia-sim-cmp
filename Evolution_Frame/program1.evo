@@ -1,0 +1,34 @@
+fun bool func(agent ag){
+    if (get_agent_value_gene(ag, "size") <= 5){
+        return True;
+    }
+    return False;
+}
+fun bool func2(agent ag){
+    if (get_agent_value_gene(ag, "speed") <= 5){
+        return True;
+    }
+    return False;
+}
+fun list agent_dis(){
+    list l = create_list();
+    number i = 0;
+    while(i < 30){
+        i = i + 1;
+        add_elem_to_list(l, create_agent());
+    }
+    return l; 
+}
+list p = create_list();
+add_elem_to_list(p, "size");
+add_elem_to_list(p, "speed");
+list pp = create_list();
+add_elem_to_list(pp, func);
+add_elem_to_list(pp, func2);
+master_simulator ms = create_master_simulator(10,10,10,10,0);
+set_ms_agents_distribution(ms, agent_dis);
+fun number food_dis(simulator s){
+    return 500 - get_simulation_day(s) * 5;
+}
+set_ms_food_distribution(ms, food_dis);
+run_ms_with_mf(ms,p,pp);

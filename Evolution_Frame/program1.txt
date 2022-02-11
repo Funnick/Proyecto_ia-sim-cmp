@@ -1,8 +1,0 @@
-Program {
-    var count = 0;
-    while(count < 3){
-        redefine count = count + 1;
-    }
-
-    print "hello world";
-}

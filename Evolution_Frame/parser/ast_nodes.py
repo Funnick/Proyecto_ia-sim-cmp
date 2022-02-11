@@ -1,489 +1,612 @@
 from abc import ABC, abstractmethod
-
-from .context import DefineContext
-from .project_context import built_in_fun, built_in_fun_type
 from .utils import ReturnException
-
-define_context = DefineContext()
-define_context.context = set(built_in_fun.keys())
 
 
 class Node(ABC):
     @abstractmethod
-    def execute(self, project_context):
+    def execute(self, context):
         pass
 
     @abstractmethod
-    def check_semantics(self):
+    def check_semantics(self, context):
         pass
 
 
-class BlockStmt(Node):
-    def __init__(self, childs) -> None:
-        self.childs = childs
+class BlockDec(Node):
+    def __init__(self, dec_list) -> None:
+        self.dec_list = dec_list
 
-    def execute(self, project_context):
-        for child in self.childs:
-            child.execute(project_context)
+    def execute(self, context):
+        for dec in self.dec_list:
+            dec.execute(context)
 
-    def check_semantics(self):
-        for child in self.childs:
-            if not child.check_semantics():
+    def check_semantics(self, context):
+        for dec in self.dec_list:
+            if not dec.check_semantics(context):
+                return False
+        return True
+
+
+class FunDec(Node):
+    def __init__(self, type_, id, param_list, body) -> None:
+        self.type_ = type_
+        self.id = id
+        self.param_list = param_list
+        self.body = body
+
+    def execute(self, context):
+        context.define_fun(self.id, self.type, self.param_list, self)
+
+    def check_semantics(self, context):
+        if context.exist_id(self.id):
+            return False
+
+        self.type = "fun_" + self.type_.type
+        context.declare_id(self.id, self.type)
+        child_context = context.get_child()
+        for p in self.param_list:
+            if not p.check_semantics(child_context):
                 return False
 
+        if self.body.check_semantics(child_context):
+            return True
+        return False
+
+
+class VarDec(Node):
+    def __init__(self, type_, id, exp) -> None:
+        self.type_ = type_
+        self.id = id
+        self.exp = exp
+
+    def execute(self, context):
+        context.define_var(self.id, self.type_.type, self.exp.execute(context))
+
+    def check_semantics(self, context):
+        if context.exist_id(self.id):
+            return False
+
+        if (
+            self.type_.check_semantics(context)
+            and self.exp.check_semantics(context)
+            and self.type_.type == self.exp.type
+        ):
+            context.declare_id(self.id, self.exp.type)
         return True
 
 
-class Expression(Node):
-    def __init__(self) -> None:
-        self.type = None
+class Param(Node):
+    def __init__(self, type_, id) -> None:
+        self.type = type_
+        self.id = id
+
+    def execute(self, context):
+        pass
+
+    def check_semantics(self, context):
+        if context.exist_id_in_this_context(self.id) and not self.type.check_semantics(
+            context
+        ):
+            return False
+        context.declare_id(self.id, self.type.type)
+        return True
 
 
-class Leaf(Expression):
-    def execute(self, project_context):
+class LType(Node):
+    def __init__(self, type) -> None:
+        self.type = type
+
+    def execute(self, context):
+        pass
+
+    def check_semantics(self, context):
+        return True
+
+
+class Number(Node):
+    def __init__(self, value) -> None:
+        self.value = value
+
+    def execute(self, context):
         return self.value
 
-
-class Number(Leaf):
-    def __init__(self, value) -> None:
-        super().__init__()
-        self.value = int(value)
-
-    def check_semantics(self):
-        self.type = "Number"
-        return True
-
-
-class String(Leaf):
-    def __init__(self, value) -> None:
-        super().__init__()
-        self.value = str(value[1:-1])
-
-    def check_semantics(self):
-        self.type = "Str"
-        return True
-
-
-class Bool(Leaf):
-    def __init__(self, value) -> None:
-        if value == "True":
-            self.value = True
+    def check_semantics(self, context):
+        if "." in self.value:
+            self.value = float(self.value)
         else:
+            self.value = int(self.value)
+        self.type = "number"
+        return True
+
+
+class String(Node):
+    def __init__(self, value) -> None:
+        self.value = value
+
+    def execute(self, context):
+        return self.value
+
+    def check_semantics(self, context):
+        self.value = str(self.value[1:-1])
+        self.type = "string"
+        return True
+
+
+class Bool(Node):
+    def __init__(self, value) -> None:
+        self.value = value
+
+    def execute(self, context):
+        return self.value
+
+    def check_semantics(self, context):
+        if self.value == "True":
+            self.value = True
+        elif self.value == "False":
             self.value = False
-
-    def check_semantics(self):
-        self.type = "Bool"
+        else:
+            return False
+        self.type = "bool"
         return True
 
 
-class Nil(Leaf):
+class Nil(Node):
     def __init__(self) -> None:
-        self.value = None
+        self.value = "Nil"
 
-    def check_semantics(self):
-        self.type = "Nil"
+    def execute(self, context):
+        return None
+
+    def check_semantics(self, context):
+        self.value = None
+        self.type = "nil"
         return True
 
 
-class BinaryExpression(Expression):
+class ID(Node):
+    def __init__(self, value) -> None:
+        self.value = str(value)
+
+    def execute(self, context):
+        if context.is_var(self.value):
+            return context.get_var_value(self.value)
+        elif context.id_is_built_in(self.value):
+            return context.get_built_in_fun(self.value)
+        return context.get_fun(self.value)
+
+    def check_semantics(self, context):
+        if not context.exist_id(self.value):
+            return False
+        self.type = context.get_id_type(self.value)
+        return True
+
+
+class If(Node):
+    def __init__(self, exp, block_dec) -> None:
+        self.exp = exp
+        self.block_dec = block_dec
+
+    def execute(self, context):
+        if self.exp.execute(context):
+            self.block_dec.execute(context.get_child())
+
+    def check_semantics(self, context):
+        if (
+            self.exp.check_semantics(context)
+            and self.exp.type == "bool"
+            and self.block_dec.check_semantics(context)
+        ):
+            return True
+        return False
+
+
+class IfElse(Node):
+    def __init__(self, exp, block_dec_1, block_dec_2) -> None:
+        self.exp = exp
+        self.block_dec_1 = block_dec_1
+        self.block_dec_2 = block_dec_2
+
+    def execute(self, context):
+        if self.exp.execute(context):
+            self.block_dec_1.execute(context.get_child())
+        else:
+            self.block_dec_2.execute(context.get_child())
+
+    def check_semantics(self, context):
+        if (
+            self.exp.check_semantics(context)
+            and self.exp.type == "bool"
+            and self.block_dec_1.check_semantics(context)
+            and self.block_dec_2.check_semantics(context)
+        ):
+            return True
+        return False
+
+
+class While(Node):
+    def __init__(self, exp, block_dec) -> None:
+        self.exp = exp
+        self.block_dec = block_dec
+
+    def execute(self, context):
+        while self.exp.execute(context):
+            self.block_dec.execute(context.get_child())
+
+    def check_semantics(self, context):
+        if (
+            self.exp.check_semantics(context)
+            and self.exp.type == "bool"
+            and self.block_dec.check_semantics(context)
+        ):
+            return True
+        return False
+
+
+class Return(Node):
+    def __init__(self, exp) -> None:
+        self.exp = exp
+
+    def execute(self, context):
+        if self.exp is None:
+            raise ReturnException(None, "Nil")
+        raise ReturnException(self.exp.execute(context), self.exp.type)
+
+    def check_semantics(self, context):
+        if self.exp is None:
+            return True
+        else:
+            if self.exp.check_semantics(context):
+                return True
+        return False
+
+
+class Assignment(Node):
+    def __init__(self, id, exp) -> None:
+        self.id = id
+        self.exp = exp
+
+    def execute(self, context):
+        context.assigment_var(self.id, self.exp.execute(context))
+
+    def check_semantics(self, context):
+        if not context.exist_id(self.id):
+            return False
+
+        id_type = context.get_id_type(self.id)
+        if self.exp.check_semantics(context) and self.exp.type == id_type:
+            return True
+        return False
+
+
+class BinaryExpression(Node):
     def __init__(self, left_child, right_child) -> None:
-        super().__init__()
         self.left_child = left_child
         self.right_child = right_child
-        self.left_value = None
-        self.right_value = None
 
-    def execute(self, project_context):
-        self.left_value = self.left_child.execute(project_context)
-        self.right_value = self.right_child.execute(project_context)
-
-    def get_left_value(self, project_context):
-        return self.left_child.execute(project_context)
-
-    def get_right_value(self, project_context):
-        return self.right_child.execute(project_context)
-
-    def check_semantics(self):
-        csl = self.left_child.check_semantics()
-        csr = self.right_child.check_semantics()
-        return csl and csr
+    def check_semantics(self, context):
+        if self.left_child.check_semantics(
+            context
+        ) and self.right_child.check_semantics(context):
+            return True
 
 
 class Or(BinaryExpression):
     def __init__(self, left_child, right_child) -> None:
         super().__init__(left_child, right_child)
 
-    def execute(self, project_context):
-        self.type = "Bool"
-        return self.get_left_value(project_context) or self.get_right_value(
-            project_context
-        )
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left or right
 
-    def check_semantics(self):
-        return super().check_semantics()
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if (
+            self.left_child.type == self.right_child.type
+            and self.left_child.type == "bool"
+        ):
+            self.type = "bool"
+            return True
+        return False
 
 
 class And(BinaryExpression):
     def __init__(self, left_child, right_child) -> None:
         super().__init__(left_child, right_child)
 
-    def execute(self, project_context):
-        self.type = "Bool"
-        return self.get_left_value(project_context) and self.get_right_value(
-            project_context
-        )
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left and right
 
-    def check_semantics(self):
-        return super().check_semantics()
-
-
-class NotEqual(BinaryExpression):
-    def execute(self, project_context):
-        self.type = "Bool"
-        return self.get_left_value(project_context) != self.get_right_value(
-            project_context
-        )
-
-    def check_semantics(self):
-        if not super().check_semantics():
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
             return False
-        if self.left_child.type == self.right_child.type:
-            self.type = "Bool"
+
+        if (
+            self.left_child.type == self.right_child.type
+            and self.left_child.type == "bool"
+        ):
+            self.type = "bool"
             return True
         return False
 
 
 class EqualEqual(BinaryExpression):
-    def execute(self, project_context):
-        self.type = "Bool"
-        return self.get_left_value(project_context) == self.get_right_value(
-            project_context
-        )
+    def __init__(self, left_child, right_child) -> None:
+        super().__init__(left_child, right_child)
 
-    def check_semantics(self):
-        return super().check_semantics()
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left == right
+
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if self.left_child.type == self.right_child.type:
+            self.type = "bool"
+            return True
+        return False
+
+
+class NotEqual(BinaryExpression):
+    def __init__(self, left_child, right_child) -> None:
+        super().__init__(left_child, right_child)
+
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left != right
+
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if self.left_child.type == self.right_child.type:
+            self.type = "bool"
+            return True
+        return False
 
 
 class Greater(BinaryExpression):
-    def execute(self, project_context):
-        self.type = "Bool"
-        return self.get_left_value(project_context) > self.get_right_value(
-            project_context
-        )
+    def __init__(self, left_child, right_child) -> None:
+        super().__init__(left_child, right_child)
 
-    def check_semantics(self):
-        return super().check_semantics()
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left > right
+
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if (
+            self.left_child.type == self.right_child.type
+            and self.left_child.type == "number"
+        ):
+            self.type = "bool"
+            return True
+        return False
 
 
 class GreaterEqual(BinaryExpression):
-    def execute(self, project_context):
-        self.type = "Bool"
-        return self.get_left_value(project_context) >= self.get_right_value(
-            project_context
-        )
+    def __init__(self, left_child, right_child) -> None:
+        super().__init__(left_child, right_child)
 
-    def check_semantics(self):
-        return super().check_semantics()
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left >= right
+
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if (
+            self.left_child.type == self.right_child.type
+            and self.left_child.type == "number"
+        ):
+            self.type = "bool"
+            return True
+        return False
 
 
 class Less(BinaryExpression):
-    def execute(self, project_context):
-        self.type = "Bool"
-        return self.get_left_value(project_context) < self.get_right_value(
-            project_context
-        )
+    def __init__(self, left_child, right_child) -> None:
+        super().__init__(left_child, right_child)
 
-    def check_semantics(self):
-        return super().check_semantics()
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left < right
+
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if (
+            self.left_child.type == self.right_child.type
+            and self.left_child.type == "number"
+        ):
+            self.type = "bool"
+            return True
+        return False
 
 
 class LessEqual(BinaryExpression):
-    def execute(self, project_context):
-        self.type = "Bool"
-        return self.get_left_value(project_context) <= self.get_right_value(
-            project_context
-        )
+    def __init__(self, left_child, right_child) -> None:
+        super().__init__(left_child, right_child)
 
-    def check_semantics(self):
-        return super().check_semantics()
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left <= right
+
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if (
+            self.left_child.type == self.right_child.type
+            and self.left_child.type == "number"
+        ):
+            self.type = "bool"
+            return True
+        return False
 
 
-class Sum(BinaryExpression):
-    def execute(self, project_context):
-        self.type = "Number"
-        return self.get_left_value(project_context) + self.get_right_value(
-            project_context
-        )
+class Plus(BinaryExpression):
+    def __init__(self, left_child, right_child) -> None:
+        super().__init__(left_child, right_child)
 
-    def check_semantics(self):
-        return super().check_semantics()
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left + right
+
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if (
+            self.left_child.type == self.right_child.type
+            and self.left_child.type == "number"
+        ):
+            self.type = "number"
+            return True
+        return False
 
 
 class Sub(BinaryExpression):
-    def execute(self, project_context):
-        self.type = "Number"
-        return self.get_left_value(project_context) - self.get_right_value(
-            project_context
-        )
+    def __init__(self, left_child, right_child) -> None:
+        super().__init__(left_child, right_child)
 
-    def check_semantics(self):
-        return super().check_semantics()
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left - right
+
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if (
+            self.left_child.type == self.right_child.type
+            and self.left_child.type == "number"
+        ):
+            self.type = "number"
+            return True
+        return False
 
 
-class Mult(BinaryExpression):
-    def execute(self, project_context):
-        self.type = "Number"
-        return self.get_left_value(project_context) * self.get_right_value(
-            project_context
-        )
+class Star(BinaryExpression):
+    def __init__(self, left_child, right_child) -> None:
+        super().__init__(left_child, right_child)
 
-    def check_semantics(self):
-        return super().check_semantics()
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left * right
+
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if (
+            self.left_child.type == self.right_child.type
+            and self.left_child.type == "number"
+        ):
+            self.type = "number"
+            return True
+        return False
 
 
 class Div(BinaryExpression):
-    def execute(self, project_context):
-        self.type = "Number"
-        return self.get_left_value(project_context) / self.get_right_value(
-            project_context
-        )
+    def __init__(self, left_child, right_child) -> None:
+        super().__init__(left_child, right_child)
 
-    def check_semantics(self):
-        return super().check_semantics()
+    def execute(self, context):
+        left = self.left_child.execute(context)
+        right = self.right_child.execute(context)
+        return left / right
+
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if (
+            self.left_child.type == self.right_child.type
+            and self.left_child.type == "number"
+        ):
+            self.type = "number"
+            return True
+        return False
 
 
-class UnaryExpression(Expression):
+class UnaryExpression(Node):
     def __init__(self, child) -> None:
-        super().__init__()
         self.child = child
 
-    def get_value(self, project_context):
-        return self.child.execute(project_context)
-
-    def execute(self, project_context):
-        self.child_value = self.child.execute(project_context)
-
-    def check_semantics(self):
-        return self.child.check_semantics()
-
-
-class Minus(UnaryExpression):
-    def execute(self, project_context):
-        self.type = "Number"
-        return -self.get_value(project_context)
-
-    def check_semantics(self):
-        return super().check_semantics()
+    def check_semantics(self, context):
+        if self.child.check_semantics(context):
+            return True
 
 
 class Not(UnaryExpression):
-    def execute(self, project_context):
-        self.type = "Bool"
-        return not self.get_value(project_context)
-
-    def check_semantics(self):
-        return super().check_semantics()
-
-
-class PrintStmt(Node):
     def __init__(self, child) -> None:
-        self.child = child
-        self.child_value = None
+        super().__init__(child)
 
-    def execute(self, project_context):
-        self.child_value = self.child.execute(project_context)
-        print(self.child_value)
+    def execute(self, context):
+        return not self.child.execute(context)
 
-    def check_semantics(self):
-        return self.child.check_semantics()
+    def check_semantics(self, context):
+        if not super().check_semantics(context):
+            return False
+
+        if self.child.type == "bool":
+            self.type = "bool"
+            return True
+        return False
 
 
 class Call(Node):
-    def __init__(self, id, args) -> None:
+    def __init__(self, id, arg_list) -> None:
         self.id = id
-        self.args = args
+        self.arg_list = arg_list
 
-    def execute(self, project_context):
-        new_context = project_context.create_child_context()
-        if built_in_fun.get(self.id) is not None:
-            self.type = built_in_fun_type[self.id]
-            return built_in_fun[self.id](new_context, self.args)
-        calleable_type = project_context.get_infered_id_type(self.id)
-        funct = project_context.get_id_value(self.id)
-        if calleable_type != "Fun":
-            self.type = calleable_type
-            return funct
-        for i, a in enumerate(funct.args):
-            new_context.set_id_value(a, self.args[i].execute(project_context))
-            new_context.set_infered_id_type(a, self.args[i].type)
+    def execute(self, context):
+        if context.id_is_built_in(self.id.value):
+            fun = context.get_built_in_fun(self.id.value)
+            return fun(context, self.arg_list)
+
+        new_context = context.get_child()
+        fun = context.get_fun(self.id.value)
+        fun_param = context.get_fun_param(self.id.value)
+        for i, arg in enumerate(self.arg_list):
+            val = arg.execute(context)
+            new_context.define_var(fun_param[i].id, arg.type, val)
         try:
-            funct.block_stmt.execute(new_context)
+            fun.body.execute(new_context)
         except ReturnException as r:
-            self.type = r.type
             return r.value
-        self.type = "Nil"
         return None
 
-    def check_semantics(self):
-        for arg in self.args:
-            if not arg.check_semantics():
-                return False
-        return define_context.exist_var(self.id)
-
-
-class Return(Node):
-    def __init__(self, expression=None) -> None:
-        self.expression = expression
-
-    def execute(self, project_context):
-        if self.expression is None:
-            raise ReturnException(None)
-        raise ReturnException(
-            self.expression.execute(project_context), self.expression.type
-        )
-
-    def check_semantics(self):
-        if self.expression == None:
+    def check_semantics(self, context):
+        if context.is_built_in(self.id.value):
+            self.type = context.get_built_in_fun_type(self.id.value)
+            for arg in self.arg_list:
+                if not arg.check_semantics(context):
+                    return False
             return True
-        return self.expression.check_semantics()
-
-
-class FuntionDeclaration(Node):
-    def __init__(self, id, args, block_stmt) -> None:
-        self.id = id
-        self.args = args
-        self.block_stmt = block_stmt
-
-    def execute(self, project_context):
-        project_context.set_id_value(self.id, self)
-        project_context.set_infered_id_type(self.id, "Fun")
-
-    def check_semantics(self):
-        for arg in self.args:
-            if not define_context.declare_var(arg):
+        if not context.exist_id(self.id.value):
+            return False
+        for arg in self.arg_list:
+            if not arg.check_semantics(context):
                 return False
-        return define_context.declare_var(self.id) and self.block_stmt.check_semantics()
-
-
-class VarDeclaration(Node):
-    def __init__(self, id, expr=None) -> None:
-        self.id = id
-        self.expr = expr
-
-    def execute(self, project_context):
-        if self.expr == None:
-            project_context.set_infered_id_type(self.id, "Nil")
-            project_context.set_id_value(self.id, "Nil")
-        else:
-            project_context.set_id_value(self.id, self.expr.execute(project_context))
-            project_context.set_infered_id_type(self.id, self.expr.type)
-
-    def check_semantics(self):
-        if self.expr == None:
-            return define_context.declare_var(self.id)
-        expr_sem = self.expr.check_semantics()
-        return expr_sem and define_context.declare_var(self.id)
-
-
-class VarCall(Expression):
-    def __init__(self, id) -> None:
-        super().__init__()
-        self.id = id
-
-    def execute(self, project_context):
-        self.type = project_context.get_infered_id_type(self.id)
-        return project_context.get_id_value(self.id)
-
-    def check_semantics(self):
-        return define_context.exist_var(self.id)
-
-
-class Redefine(Expression):
-    def __init__(self, id, expr) -> None:
-        super().__init__()
-        self.id = id
-        self.expr = expr
-
-    def execute(self, project_context):
-        self.type = self.expr.type
-        project_context.set_id_value(self.id, self.expr.execute(project_context))
-        return project_context.get_id_value(self.id)
-
-    def check_semantics(self):
-        return define_context.exist_var(self.id) and self.expr.check_semantics()
-
-
-class VarAssigment(Expression):
-    def __init__(self, id, expr) -> None:
-        super().__init__()
-        self.id = id
-        self.expr = expr
-
-    def execute(self, project_context):
-        self.type = self.expr.type
-        project_context.set_id_value(self.id, self.expr.execute(project_context))
-        project_context.set_infered_id_type(self.id, self.type)
-        return project_context.get_id_value(self.id)
-
-    def check_semantics(self):
-        return define_context.exist_var(self.id) and self.expr.check_semantics()
-
-
-class If(Node):
-    def __init__(self, expr, stmt) -> None:
-        self.expr = expr
-        self.stmt = stmt
-
-    def execute(self, project_context):
-        if self.expr.execute(project_context):
-            self.stmt.execute(project_context)
-
-    def check_semantics(self):
-        expr_sem = self.expr.check_semantics()
-        stmt_sem = self.stmt.check_semantics()
-
-        return expr_sem and stmt_sem
-
-
-class IfElse(Node):
-    def __init__(self, expr, stmt, else_stmt) -> None:
-        self.expr = expr
-        self.stmt = stmt
-        self.else_stmt = else_stmt
-
-    def execute(self, project_context):
-        if self.expr.execute(project_context):
-            self.stmt.execute(project_context)
-        else:
-            self.else_stmt.execute()
-
-    def check_semantics(self):
-        expr_sem = self.expr.check_semantics()
-        stmt_sem = self.stmt.check_semantics()
-        else_stmt_sem = self.else_stmt.check_semantics()
-
-        return expr_sem and stmt_sem and else_stmt_sem
-
-
-class While(Node):
-    def __init__(self, expr, block_stmt) -> None:
-        self.expr = expr
-        self.block_stmt = block_stmt
-
-    def execute(self, project_context):
-        while self.expr.execute(project_context):
-            self.block_stmt.execute(project_context)
-
-    def check_semantics(self):
-        return self.expr.check_semantics() and self.block_stmt.check_semantics()
-
-
-class AgentPredicate(Node):
-    def __init__(self, id) -> None:
-        self.id = id
-
-    def execute(self, project_context):
-        return project_context.get_id_value(self.id)
-
-    def check_semantics(self):
-        return define_context.exist_var(self.id)
+        self.type = context.get_id_type(self.id.value)[4:]
+        return True

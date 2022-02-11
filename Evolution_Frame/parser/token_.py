@@ -3,15 +3,12 @@ from enum import Enum, auto
 
 class TokenType(Enum):
     # Program
-    PROGRAM = auto()
     LEFT_KEY = auto()
     RIGHT_KEY = auto()
 
     # VarDeclaration
-    VAR = auto()
     FUN = auto()
     EQUAL = auto()
-    REDEFINE = auto()
 
     # Stmt
     DOT_COMA = auto()
@@ -22,9 +19,6 @@ class TokenType(Enum):
     IF = auto()
     WHILE = auto()
     ELSE = auto()
-
-    # PrintStmt
-    PRINT = auto()
 
     # LogicOr LogicAnd
     OR = auto()
@@ -51,12 +45,17 @@ class TokenType(Enum):
     # Unary
     NOT = auto()
 
-    AGENT_PREDICATE = auto()
-    EMPTY_PREDICATE = auto()
     # Primary
+    MASTER_SIMULATOR = auto()
+    LIST = auto()
+    AGENT = auto()
+    SIMULATOR = auto()
+    NUMBERTYPE = auto()
+    STRINGTYPE = auto()
     ID = auto()
     NUMBER = auto()
     STRING = auto()
+    BOOL = auto()
     TRUE = auto()
     FALSE = auto()
     LEFT_PAREN = auto()

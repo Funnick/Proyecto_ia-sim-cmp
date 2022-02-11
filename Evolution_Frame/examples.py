@@ -1,5 +1,6 @@
-from evolution import evolution
+from evolution_ import evolution
 
+"""
 # Ejemplo 1 ---------------------------------------------------
 agent_1 = evolution.Agent()
 # -------------------------------------------------------------
@@ -19,7 +20,7 @@ agent_3 = evolution.Agent(behavior=behavior_1)
 
 # Ejemplo 4 ---------------------------------------------------
 def diet(agent, element):
-    if element.is_agent == True and element.genetic_code.get_code('diet') > 2:
+    if element.is_agent == True and element.genetic_code.get_code("diet") > 2:
         return True
 
 
@@ -30,7 +31,9 @@ def diet_move(elements=None, *args):
 
 
 rule_1 = evolution.EatRule(to_relevance=lambda *args: 0.8)
-rule_2 = evolution.Rule('diet', to_see=diet, to_move=diet_move, to_relevance=lambda *args: 0.5)
+rule_2 = evolution.Rule(
+    "diet", to_see=diet, to_move=diet_move, to_relevance=lambda *args: 0.5
+)
 behavior_2 = evolution.Behavior(rules=[rule_1, rule_2])
 agent_4 = evolution.Agent(genes=[gen_1, gen_2], behavior=behavior_2)
 # -------------------------------------------------------------
@@ -44,7 +47,7 @@ agent_5 = evolution.Agent(genes=[gen_1], rules=[rule_1, rule_2])
 # Ejemplo 6 ---------------------------------------------------
 # Función de filtrado 1
 def func(ag: evolution.Agent):
-    if (ag.genetic_code.get_gene('speed').value > 5):
+    if ag.genetic_code.get_gene("speed").value > 5:
         return True
     else:
         return False
@@ -52,24 +55,20 @@ def func(ag: evolution.Agent):
 
 # Función de filtrado 2
 def func2(ag: evolution.Agent):
-    if (ag.genetic_code.get_gene('size').value <= 5):
+    if ag.genetic_code.get_gene("size").value <= 5:
         return True
     else:
         return False
 
 
-# Función de filtrado 3
-def func3(ag: evolution.Agent):
-    if (ag.is_alive):
-        return True
-    else:
-        return False
 
 
 # Función de filtrado 4
 def func4(ag: evolution.Agent):
-    if (ag.genetic_code.get_gene('reproduction').value == 2
-            and ag.genetic_code.get_gene('fertility').value > 4):
+    if (
+        ag.genetic_code.get_gene("reproduction").value == 2
+        and ag.genetic_code.get_gene("fertility").value > 4
+    ):
         return True
     else:
         return False
@@ -89,30 +88,40 @@ def func_food(simulation):
 for i in range(5):
     s.add_agent_to_simulation(evolution.Agent())
 
-s.simulate(days = 100,
-           food_function=func_food,
-           maping=[evolution.MapFunction('speed > 5',func),
-                   evolution.MapFunction('size <= 5',func2),
-                   evolution.MapFunction('alive',func3),
-                   evolution.MapFunction('sexual & fert > 4',func4)],
-           plot=1)
+s.simulate(
+    days=100,
+    food_function=func_food,
+    maping=[
+        evolution.MapFunction("speed > 5", func),
+        evolution.MapFunction("size <= 5", func2),
+        evolution.MapFunction("alive", func3),
+        evolution.MapFunction("sexual & fert > 4", func4),
+    ],
+    plot=1,
+)
 # -------------------------------------------------------------
-
+"""
 # Ejemplo 8 ---------------------------------------------------
 enemies = evolution.EnemiesRule(to_relevance=lambda *args: -1)
 visited = evolution.VisitedRule(to_relevance=lambda *args: 1)
+# Función de filtrado 3
+def func3(ag: evolution.Agent):
+    if ag.is_alive:
+        return True
+    else:
+        return False
+
 
 behavior_ = evolution.Behavior(rules=[enemies, visited])
 
 
 def func_agent():
-    return [evolution.Agent()
-            for i in range(50)]
+    return [evolution.Agent() for i in range(50)]
 
 
-sm = evolution.MasterSimulator(trees=10, rounds=30, days=100)
-sm.food_distribution = func_food
+sm = evolution.MasterSimulator(trees=0, rounds=1, days=5)
+# sm.food_distribution = func_food
 sm.agents_distribution = func_agent
 
-sm.run(plot=1, maping=[evolution.MapFunction('alive', func3)])
+sm.run(plot=1, maping=[evolution.MapFunction("alive", func3)])
 # -------------------------------------------------------------

@@ -1,0 +1,188 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "EVO Programming Language",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#operators"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#reserved-words"
+		},
+		{
+			"include": "#ctrl-statements"
+		},
+		{
+			"captures": {
+				"2":{
+					"name":"entity.name.function.evo"
+				},
+				"1":{
+					"name":"storage.type.built-in.primitive.evo"
+				},
+				"3":{
+					"name":"punctuation.definition.parameters.evo"
+				}
+			},
+			"match": "\\b(?:\\s+([-a-zA-Z0-9_]+))?\\s*(\\()",
+			"name": "punctuation.definition.parameters.evo"
+		},
+		{
+			"include": "#expression"
+		}
+	],
+	"repository": {
+		"numbers": {
+			"patterns": [{
+				"name": "keyword.other.unit.suffix.integer.evo",
+				"match": "(^-?[0-9][0-9\\.]+$)"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.evo",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.scape.evo",
+					"match": "\\\\."
+				}
+			]
+		},
+		"operators":{
+			"patterns": [
+				{
+					"match": "--",
+					"name": "keyword.operator.decrement.evo"
+				},
+				{
+					"match": "\\+\\+",
+					"name": "keyword.operator.increment.evo"
+				},
+				{
+					"match": "%=|\\+=|-=|\\*=|(?<!\\()/=",
+					"name": "keyword.operator.assignment.compound.evo"
+				},
+				{
+					"match": "!=|<=|>=|==|<|>",
+					"name": "keyword.operator.comparison.evo"
+				},
+				{
+					"match": "&&|!|\\|\\|",
+					"name": "keyword.operator.logical.evo"
+				},
+				{
+					"match": "&|\\||\\^|~",
+					"name": "keyword.operator.evo"
+				},
+				{
+					"match": "%|\\*|/|-|\\+",
+					"name": "keyword.operator.evo"
+				}
+			]
+		},
+		"ctrl-statements":{
+			"patterns": [{
+				"name": "keyword.control.evo",
+				"match": "\\b(if|else|while|return|or|and|not)\\b"
+			}]
+		},
+		"reserved-words":{
+			"name": "entity.name.function.member.evo",
+			"match": "\\b(list|agent|master_simulator|number|print|string|bool|False|True|fun|simulator)\\b"
+		},
+		"expression":{
+			"patterns": [
+				{"include": "#reserved-words"},
+				{"include": "#numbers"},
+				{"include": "#paren-expression"},
+				{"include": "#strings"}
+			]
+		},
+		"paren-expression":{
+			"patterns":[
+				{
+					"captures":{
+						"1":{
+							"name":"entity.name.function.evo"
+						}
+					},
+					"match": "\\b(\\w+)(?:\\s([-a-zA-Z0-9_]+))?\\s*(\\()",
+					"name": "punctuation.definition.parameters.evo",
+					"patterns": [{"include": "#expression"}]
+				}
+			]
+		},
+		"comments": {
+			"patterns":[
+				{
+					"begin": "#\\!",
+					"beginCaptures":{
+						"0":{
+							"name":"punctuation.definition.comment.evo"
+						}
+					},
+					"end":"\\n",
+					"name": "comment.line.number-sign.evo"
+				},
+				{
+					"captures": {
+						"0": {
+							"name": "punctuation.definition.comment.evo"
+						}
+					},
+					"match": "/\\*\\*/",
+					"name": "comment.block.empty.evo"
+				},
+				{
+					"include": "#comments-inline"
+				}
+			]
+		},
+		"comments-inline":{
+			"patterns": [
+				{
+					"begin": "/\\*",
+					"captures": {
+						"0":{
+							"name": "punctuation.definition.comment.evo"
+						}
+					},
+					"end": "\\*/",
+					"name": "comment.block.evo"
+				},
+				{
+					"begin": "(^[ \\t]+)?(?=//)",
+					"beginCaptures": {
+						"1":{
+							"name": "punctuation.whitespace.comment.leading.evo"
+						}
+					},
+					"end": "(?!\\G)",
+					"patterns":[
+						{
+							"begin": "//",
+							"beginCaptures":{
+								"0": {
+									"name": "punctuation.definition.comments.evo"
+								}
+							},
+							"end": "\\n",
+							"name": "comment.line.double-slash.evo"
+						}
+					]
+				}
+			]
+		}
+		
+	},
+	"scopeName": "source.evo"
+}

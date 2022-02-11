@@ -1,0 +1,25 @@
+{
+    "name": "evo",
+    "displayName": "EVO",
+    "description": "EVO Programming Language",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.64.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "evo",
+            "aliases": ["EVO Programming Language", "evo"],
+            "extensions": [".evo"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "evo",
+            "scopeName": "source.evo",
+            "path": "./syntaxes/evo.tmLanguage.json"
+        }]
+    }
+}

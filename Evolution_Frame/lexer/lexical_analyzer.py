@@ -1,5 +1,7 @@
 from typing import List, Dict
-from parser.token_ import Token, TokenMatch, TokenType
+
+# from parser.token_ import Token, TokenMatch, TokenType
+from parser.token_ import *
 from .regex import convert_str_in_regex, convert_regex_in_automata
 from .automata import (
     Automata,
@@ -14,17 +16,11 @@ from .lexer import Lexer
 
 matches = [
     # Program
-    TokenMatch("Program", TokenType.PROGRAM),
     TokenMatch("{", TokenType.LEFT_KEY),
     TokenMatch("}", TokenType.RIGHT_KEY),
     # VarDeclaration
-    TokenMatch("var", TokenType.VAR),
     TokenMatch("fun", TokenType.FUN),
     TokenMatch("=", TokenType.EQUAL),
-    # Assigment
-    TokenMatch("redefine", TokenType.REDEFINE),
-    TokenMatch("AgentPredicate", TokenType.AGENT_PREDICATE),
-    TokenMatch("EmptyPredicate", TokenType.EMPTY_PREDICATE),
     # Stmt
     TokenMatch(";", TokenType.DOT_COMA),
     TokenMatch(",", TokenType.COMA),
@@ -34,7 +30,6 @@ matches = [
     TokenMatch("while", TokenType.WHILE),
     TokenMatch("else", TokenType.ELSE),
     # PrintStmt
-    TokenMatch("print", TokenType.PRINT),
     # LogicOr
     TokenMatch("or", TokenType.OR),
     # LogicAnd
@@ -54,8 +49,15 @@ matches = [
     TokenMatch("/", TokenType.SLASH),
     TokenMatch("\*", TokenType.STAR),
     # Unary
-    TokenMatch("!", TokenType.NOT),
+    TokenMatch("not", TokenType.NOT),
     # Primary
+    TokenMatch("list", TokenType.LIST),
+    TokenMatch("agent", TokenType.AGENT),
+    TokenMatch("master_simulator", TokenType.MASTER_SIMULATOR),
+    TokenMatch("simulator", TokenType.SIMULATOR),
+    TokenMatch("number", TokenType.NUMBERTYPE),
+    TokenMatch("string", TokenType.STRINGTYPE),
+    TokenMatch("bool", TokenType.BOOL),
     TokenMatch("False", TokenType.FALSE),
     TokenMatch("Nil", TokenType.NIL),
     TokenMatch("True", TokenType.TRUE),

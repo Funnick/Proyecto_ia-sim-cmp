@@ -1,5 +1,3 @@
-from lib2to3.pgen2.grammar import Grammar
-from unittest.mock import sentinel
 from .grammar import (
     Terminal,
     NoTerminal,
@@ -11,28 +9,27 @@ from .grammar import (
 from .token_ import TokenType
 from .production_actions import *
 
+
 # Start Symbol
 program = NoTerminal("program")
 # No Terminals
-block_stmt = NoTerminal("block_stmt")
-block_stmt_ = NoTerminal("block_stmt_")
-declaration = NoTerminal("declaration")
+block_dec = NoTerminal("block_dec")
+block_dec_ = NoTerminal("block_dec_")
 fun_declaration = NoTerminal("fun_declaration")
-function = NoTerminal("function")
-arg_list = NoTerminal("arg_list")
-arg_list_ = NoTerminal("arg_list_")
 var_declaration = NoTerminal("var_declaration")
 var_declaration_ = NoTerminal("var_declaration_")
 stmt = NoTerminal("stmt")
+type_ = NoTerminal("type_")
+param_list = NoTerminal("param_list")
+param_list_ = NoTerminal("param_list_")
+if_stmt = NoTerminal("if_stmt")
+else_stmt = NoTerminal("else_stmt")
+while_stmt = NoTerminal("while_stmt")
 return_stmt = NoTerminal("return_stmt")
 return_value = NoTerminal("return_value")
-if_stmt = NoTerminal("if_stmt")
-while_stmt = NoTerminal("while_stmt")
-else_stmt = NoTerminal("else_stmt")
-print_stmt = NoTerminal("print_stmt")
-expression_stmt = NoTerminal("expression_stmt")
+assignment = NoTerminal("assignment")
+assignment_ = NoTerminal("assignment_")
 expression = NoTerminal("expression")
-assigment = NoTerminal("assigment")
 logic_or = NoTerminal("logic_or")
 logic_or_ = NoTerminal("logic_or_")
 logic_and = NoTerminal("logic_and")
@@ -47,34 +44,34 @@ factor = NoTerminal("factor")
 factor_ = NoTerminal("factor_")
 unary = NoTerminal("unary")
 primary = NoTerminal("primary")
-call = NoTerminal("call")
-arg_exps = NoTerminal("arg_exps")
-arg_exps_ = NoTerminal("arg_exps_")
-predicate = NoTerminal("predicate")
-expr_pred = NoTerminal("expr_pred")
+call_ = NoTerminal("call")
+call__ = NoTerminal("call_")
+arg_list = NoTerminal("arg_list")
+arg_list_ = NoTerminal("arg_list_")
+# NoTerminalsList
 no_terminals_list = [
     program,
-    block_stmt,
-    block_stmt_,
-    declaration,
+    block_dec,
+    block_dec_,
     fun_declaration,
-    function,
-    arg_list,
-    arg_list_,
     var_declaration,
     var_declaration_,
     stmt,
+    type_,
+    param_list,
+    param_list_,
     return_stmt,
     return_value,
     if_stmt,
     while_stmt,
     else_stmt,
-    print_stmt,
-    expression_stmt,
     expression,
-    assigment,
+    assignment,
+    assignment_,
     logic_or,
+    logic_or_,
     logic_and,
+    logic_and_,
     equality,
     equality_,
     cmp,
@@ -85,25 +82,21 @@ no_terminals_list = [
     factor_,
     unary,
     primary,
-    call,
-    arg_exps,
-    arg_exps_,
-    predicate,
+    call_,
+    call__,
+    arg_list,
+    arg_list_,
 ]
 # Terminals
-program_terminal = Terminal("Program", TokenType.PROGRAM)
 left_key = Terminal("{", TokenType.LEFT_KEY)
 right_key = Terminal("}", TokenType.RIGHT_KEY)
 eps = Terminal("eps", TokenType.EPS)
 fun = Terminal("fun", TokenType.FUN)
-var = Terminal("var", TokenType.VAR)
 return_terminal = Terminal("return", TokenType.RETURN)
 if_terminal = Terminal("if", TokenType.IF)
 while_terminal = Terminal("while", TokenType.WHILE)
 else_terminal = Terminal("else", TokenType.ELSE)
-redefine = Terminal("redefine", TokenType.REDEFINE)
 equal = Terminal("=", TokenType.EQUAL)
-print_terminal = Terminal("print", TokenType.PRINT)
 dot_coma = Terminal(";", TokenType.DOT_COMA)
 coma = Terminal(",", TokenType.COMA)
 or_terminal = Terminal("or", TokenType.OR)
@@ -118,31 +111,33 @@ plus = Terminal("+", TokenType.PLUS)
 sub = Terminal("-", TokenType.MINUS)
 star = Terminal("*", TokenType.STAR)
 div = Terminal("/", TokenType.SLASH)
-not_terminal = Terminal("!", TokenType.NOT)
+not_terminal = Terminal("not", TokenType.NOT)
 id_terminal = Terminal("id", TokenType.ID)
+list_terminal = Terminal("list", TokenType.LIST)
+agent = Terminal("agent", TokenType.AGENT)
+simulator = Terminal("simulator", TokenType.SIMULATOR)
+master_simulator = Terminal("master_simulator", TokenType.MASTER_SIMULATOR)
+type_number_terminal = Terminal("type_number", TokenType.NUMBERTYPE)
+type_string_terminal = Terminal("type_string", TokenType.STRINGTYPE)
 number_terminal = Terminal("number", TokenType.NUMBER)
 string_terminal = Terminal("str", TokenType.STRING)
+bool_terminal = Terminal("bool", TokenType.BOOL)
 true_terminal = Terminal("True", TokenType.TRUE)
 false_terminal = Terminal("False", TokenType.FALSE)
-nil = Terminal("nil", TokenType.NIL)
+nil = Terminal("Nil", TokenType.NIL)
 left_paren = Terminal("(", TokenType.LEFT_PAREN)
 right_paren = Terminal(")", TokenType.RIGHT_PAREN)
-agent_predicate = Terminal("AgentPredicate", TokenType.AGENT_PREDICATE)
-empty_predicate = Terminal("EmptyPredicate", TokenType.EMPTY_PREDICATE)
+# Terminals List
 terminals_list = [
-    program_terminal,
     left_key,
     right_key,
     fun,
-    var,
     equal,
-    redefine,
     eps,
     return_terminal,
     if_terminal,
     while_terminal,
     else_terminal,
-    print_terminal,
     dot_coma,
     coma,
     or_terminal,
@@ -158,105 +153,198 @@ terminals_list = [
     star,
     div,
     not_terminal,
+    simulator,
+    master_simulator,
+    agent,
+    list_terminal,
     number_terminal,
+    type_number_terminal,
+    bool_terminal,
     string_terminal,
+    type_string_terminal,
     true_terminal,
     false_terminal,
     nil,
     left_paren,
     right_paren,
-    agent_predicate,
-    empty_predicate,
 ]
-# Productions
-# program
 program_productions = [
     Production(
         program,
-        SentenceForm([program_terminal, left_key, block_stmt, right_key]),
+        SentenceForm([block_dec]),
         action_1,
     )
 ]
-# block_stmt
-block_stmt_productions = [
-    Production(block_stmt, SentenceForm([declaration, block_stmt_]), action_2)
-]
-# block_stmt_
-block_stmt__productions = [
-    Production(block_stmt_, SentenceForm([declaration, block_stmt_]), action_3),
-    Production(block_stmt_, SentenceForm([eps]), action_22),
-]
-# declaration
-declaration_productions = [
-    Production(declaration, SentenceForm([fun_declaration]), action_4),
-    Production(declaration, SentenceForm([var_declaration]), action_4),
-    Production(declaration, SentenceForm([stmt]), action_4),
-]
-# fun_declaration
-fun_declaration_productions = [
-    Production(fun_declaration, SentenceForm([fun, function]), action_38)
-]
-# function
-function_productions = [
+block_dec_productions = [
     Production(
-        function,
+        block_dec,
+        SentenceForm([fun_declaration, block_dec_]),
+        action_2,
+    ),
+    Production(
+        block_dec,
+        SentenceForm([var_declaration, block_dec_]),
+        action_2,
+    ),
+    Production(
+        block_dec,
+        SentenceForm([stmt, block_dec_]),
+        action_2,
+    ),
+    Production(
+        block_dec,
+        SentenceForm([eps]),
+        action_3,
+    ),
+]
+block_dec__productions = [
+    Production(
+        block_dec_,
+        SentenceForm([fun_declaration, block_dec_]),
+        action_4,
+    ),
+    Production(
+        block_dec_,
+        SentenceForm([var_declaration, block_dec_]),
+        action_4,
+    ),
+    Production(
+        block_dec_,
+        SentenceForm([stmt, block_dec_]),
+        action_4,
+    ),
+    Production(
+        block_dec_,
+        SentenceForm([eps]),
+        action_5,
+    ),
+]
+fun_declaration_productions = [
+    Production(
+        fun_declaration,
         SentenceForm(
             [
+                fun,
+                type_,
                 id_terminal,
                 left_paren,
-                arg_list,
+                param_list,
                 right_paren,
                 left_key,
-                block_stmt,
+                block_dec,
                 right_key,
             ]
         ),
-        action_39,
-    )
+        action_6,
+    ),
 ]
-# arg_list
-arg_list_productions = [
-    Production(arg_list, SentenceForm([id_terminal, arg_list_]), action_40),
-    Production(arg_list, SentenceForm([eps]), action_41),
-]
-# arg_list'
-arg_list__productions = [
-    Production(arg_list_, SentenceForm([coma, id_terminal, arg_list_]), action_42),
-    Production(arg_list_, SentenceForm([eps]), action_8),
-]
-# var_declaration
 var_declaration_productions = [
     Production(
         var_declaration,
-        SentenceForm([var, id_terminal, var_declaration_, dot_coma]),
-        action_27,
-    )
+        SentenceForm([type_, id_terminal, equal, var_declaration_, dot_coma]),
+        action_7,
+    ),
 ]
-# var_declaration_
-var_declaration__productions = [
-    Production(var_declaration_, SentenceForm([equal, expression]), action_28),
-    Production(var_declaration_, SentenceForm([eps]), action_29),
-]
-# stmt
-stmt_productions = [
-    Production(stmt, SentenceForm([expression_stmt]), action_4),
-    Production(stmt, SentenceForm([print_stmt]), action_4),
-    Production(stmt, SentenceForm([if_stmt]), action_4),
-    Production(stmt, SentenceForm([return_stmt]), action_4),
-    Production(stmt, SentenceForm([while_stmt]), action_4),
-]
-# return_stmt
-return_stmt_productions = [
+type__productions = [
     Production(
-        return_stmt, SentenceForm([return_terminal, return_value, dot_coma]), action_47
-    )
+        type_,
+        SentenceForm([type_number_terminal]),
+        action_8,
+    ),
+    Production(
+        type_,
+        SentenceForm([type_string_terminal]),
+        action_9,
+    ),
+    Production(
+        type_,
+        SentenceForm([nil]),
+        action_10,
+    ),
+    Production(
+        type_,
+        SentenceForm([bool_terminal]),
+        action_11,
+    ),
+    Production(
+        type_,
+        SentenceForm([simulator]),
+        action_48,
+    ),
+    Production(
+        type_,
+        SentenceForm([agent]),
+        action_48,
+    ),
+    Production(
+        type_,
+        SentenceForm([list_terminal]),
+        action_48,
+    ),
+    Production(
+        type_,
+        SentenceForm([master_simulator]),
+        action_48,
+    ),
 ]
-# return_value
-return_value_productions = [
-    Production(return_value, SentenceForm([expression]), action_48),
-    Production(return_value, SentenceForm([eps]), action_49),
+var_declaration__productions = [
+    Production(
+        var_declaration_,
+        SentenceForm([expression]),
+        action_12,
+    ),
+    Production(
+        var_declaration_,
+        SentenceForm([eps]),
+        action_13,
+    ),
 ]
-# if_stmt
+param_list_productions = [
+    Production(
+        param_list,
+        SentenceForm([type_, id_terminal, param_list_]),
+        action_14,
+    ),
+    Production(
+        param_list,
+        SentenceForm([eps]),
+        action_15,
+    ),
+]
+param_list__productions = [
+    Production(
+        param_list_,
+        SentenceForm([coma, type_, id_terminal, param_list_]),
+        action_16,
+    ),
+    Production(
+        param_list_,
+        SentenceForm([eps]),
+        action_5,
+    ),
+]
+stmt_productions = [
+    Production(
+        stmt,
+        SentenceForm([if_stmt]),
+        action_1,
+    ),
+    Production(
+        stmt,
+        SentenceForm([while_stmt]),
+        action_1,
+    ),
+    Production(
+        stmt,
+        SentenceForm([return_stmt]),
+        action_1,
+    ),
+    Production(
+        stmt,
+        SentenceForm([assignment]),
+        action_1,
+    ),
+]
 if_stmt_productions = [
     Production(
         if_stmt,
@@ -267,24 +355,26 @@ if_stmt_productions = [
                 expression,
                 right_paren,
                 left_key,
-                block_stmt,
+                block_dec,
                 right_key,
                 else_stmt,
             ]
         ),
-        action_32,
+        action_17,
     ),
 ]
-# else_stmt
 else_stmt_productions = [
     Production(
         else_stmt,
-        SentenceForm([else_terminal, left_key, block_stmt, right_key]),
-        action_33,
+        SentenceForm([else_terminal, left_key, block_dec, right_key]),
+        action_18,
     ),
-    Production(else_stmt, SentenceForm([eps]), action_34),
+    Production(
+        else_stmt,
+        SentenceForm([eps]),
+        action_19,
+    ),
 ]
-# while_stmt
 while_stmt_productions = [
     Production(
         while_stmt,
@@ -295,130 +385,114 @@ while_stmt_productions = [
                 expression,
                 right_paren,
                 left_key,
-                block_stmt,
+                block_dec,
                 right_key,
             ]
         ),
-        action_37,
-    )
-]
-# print_stmt
-print_stmt_productions = [
-    Production(
-        print_stmt, SentenceForm([print_terminal, expression, dot_coma]), action_26
-    )
-]
-# expression_stmt
-expression_stmt_productions = [
-    Production(expression_stmt, SentenceForm([expression, dot_coma]), action_4)
-]
-# expression
-expression_productions = [Production(expression, SentenceForm([assigment]), action_4)]
-# assigment
-assigment_productions = [
-    Production(
-        assigment, SentenceForm([redefine, id_terminal, equal, logic_or]), action_31
+        action_20,
     ),
-    Production(assigment, SentenceForm([logic_or]), action_4),
 ]
-# logic_or
+return_stmt_productions = [
+    Production(
+        return_stmt, SentenceForm([return_terminal, return_value, dot_coma]), action_21
+    )
+]
+return_value_productions = [
+    Production(return_value, SentenceForm([expression]), action_1),
+    Production(return_value, SentenceForm([eps]), action_13),
+]
+assignment_productions = [
+    Production(
+        assignment, SentenceForm([id_terminal, assignment_, dot_coma]), action_22
+    ),
+]
+assignment__productions = [
+    Production(assignment_, SentenceForm([equal, expression]), action_46),
+    Production(
+        assignment_, SentenceForm([left_paren, arg_list, right_paren]), action_47
+    ),
+]
+expression_productions = [Production(expression, SentenceForm([logic_or]), action_1)]
 logic_or_productions = [
-    Production(logic_or, SentenceForm([logic_and, logic_or_]), action_5)
+    Production(logic_or, SentenceForm([logic_and, logic_or_]), action_23)
 ]
-# logic_or_
 logic_or__productions = [
-    Production(logic_or_, SentenceForm([or_terminal, logic_and, logic_or_]), action_35),
-    Production(logic_or_, SentenceForm([eps]), action_8),
+    Production(logic_or_, SentenceForm([or_terminal, logic_and, logic_or_]), action_24),
+    Production(logic_or_, SentenceForm([eps]), action_5),
 ]
-# logic_and
 logic_and_productions = [
-    Production(logic_and, SentenceForm([equality, logic_and_]), action_5)
+    Production(logic_and, SentenceForm([equality, logic_and_]), action_23)
 ]
-# logic_and_
 logic_and__productions = [
     Production(
-        logic_and_, SentenceForm([and_terminal, equality, logic_and_]), action_36
+        logic_and_, SentenceForm([and_terminal, equality, logic_and_]), action_25
     ),
-    Production(logic_and_, SentenceForm([eps]), action_8),
+    Production(logic_and_, SentenceForm([eps]), action_5),
 ]
-# equality
-equality_productions = [Production(equality, SentenceForm([cmp, equality_]), action_5)]
-# equality_
+equality_productions = [
+    Production(equality, SentenceForm([cmp, equality_]), action_23),
+]
 equality__productions = [
-    Production(equality_, SentenceForm([not_equal, cmp]), action_6),
-    Production(equality_, SentenceForm([equal_equal, cmp]), action_7),
-    Production(equality_, SentenceForm([eps]), action_8),
+    Production(equality_, SentenceForm([equal_equal, cmp]), action_26),
+    Production(equality_, SentenceForm([not_equal, cmp]), action_27),
+    Production(equality_, SentenceForm([eps]), action_5),
 ]
-# cmp
-cmp_productions = [Production(cmp, SentenceForm([term, cmp_]), action_5)]
-# cmp_
+cmp_productions = [Production(cmp, SentenceForm([term, cmp_]), action_23)]
 cmp__productions = [
-    Production(cmp_, SentenceForm([greater, term]), action_9),
-    Production(cmp_, SentenceForm([greater_equal, term]), action_10),
-    Production(cmp_, SentenceForm([less, term]), action_11),
-    Production(cmp_, SentenceForm([less_equal, term]), action_12),
-    Production(cmp_, SentenceForm([eps]), action_8),
+    Production(cmp_, SentenceForm([greater, term]), action_28),
+    Production(cmp_, SentenceForm([greater_equal, term]), action_29),
+    Production(cmp_, SentenceForm([less, term]), action_30),
+    Production(cmp_, SentenceForm([less_equal, term]), action_31),
+    Production(cmp_, SentenceForm([eps]), action_5),
 ]
-# term
-term_productions = [Production(term, SentenceForm([factor, term_]), action_5)]
-# term_
+term_productions = [
+    Production(term, SentenceForm([factor, term_]), action_23),
+]
 term__productions = [
-    Production(term_, SentenceForm([plus, factor, term_]), action_13),
-    Production(term_, SentenceForm([sub, factor, term_]), action_14),
-    Production(term_, SentenceForm([eps]), action_8),
+    Production(term_, SentenceForm([plus, factor, term_]), action_32),
+    Production(term_, SentenceForm([sub, factor, term_]), action_33),
+    Production(term_, SentenceForm([eps]), action_5),
 ]
-# factor
-factor_productions = [Production(factor, SentenceForm([unary, factor_]), action_5)]
-# factor_
+factor_productions = [
+    Production(factor, SentenceForm([unary, factor_]), action_23),
+]
 factor__productions = [
-    Production(factor_, SentenceForm([star, unary, factor_]), action_15),
-    Production(factor_, SentenceForm([div, unary, factor_]), action_16),
-    Production(factor_, SentenceForm([eps]), action_8),
+    Production(factor_, SentenceForm([star, unary, factor_]), action_34),
+    Production(factor_, SentenceForm([div, unary, factor_]), action_35),
+    Production(factor_, SentenceForm([eps]), action_5),
 ]
-# unary
 unary_productions = [
-    Production(unary, SentenceForm([sub, unary]), action_17),
-    Production(unary, SentenceForm([not_terminal, unary]), action_23),
-    Production(unary, SentenceForm([primary]), action_4),
+    Production(unary, SentenceForm([not_terminal, unary]), action_36),
+    Production(unary, SentenceForm([call_]), action_1),
 ]
-# primary
-primary_producitons = [
-    Production(primary, SentenceForm([number_terminal]), action_18),
-    Production(primary, SentenceForm([string_terminal]), action_19),
-    Production(primary, SentenceForm([true_terminal]), action_24),
-    Production(primary, SentenceForm([false_terminal]), action_24),
-    Production(primary, SentenceForm([nil]), action_20),
-    Production(primary, SentenceForm([left_paren, expression, right_paren]), action_21),
-    Production(primary, SentenceForm([id_terminal, call]), action_30),
+call__productions = [Production(call_, SentenceForm([primary, call__]), action_23)]
+call___productions = [
+    Production(call__, SentenceForm([left_paren, arg_list, right_paren]), action_37),
+    Production(call__, SentenceForm([eps]), action_5),
 ]
-call_productions = [
-    Production(call, SentenceForm([left_paren, arg_exps, right_paren]), action_43),
-    Production(call, SentenceForm([eps]), action_46),
+arg_list_productions = [
+    Production(arg_list, SentenceForm([expression, arg_list_]), action_38),
+    Production(arg_list, SentenceForm([eps]), action_39),
 ]
-arg_exps_productions = [
-    Production(arg_exps, SentenceForm([expr_pred, arg_exps_]), action_44),
-    Production(arg_exps, SentenceForm([eps]), action_41),
+arg_list__productions = [
+    Production(arg_list_, SentenceForm([coma, expression, arg_list_]), action_40),
+    Production(arg_list_, SentenceForm([eps]), action_5),
 ]
-arg_exps__productions = [
-    Production(arg_exps_, SentenceForm([coma, expr_pred, arg_exps_]), action_45),
-    Production(arg_exps_, SentenceForm([eps]), action_8),
+primary_productions = [
+    Production(primary, SentenceForm([true_terminal]), action_41),
+    Production(primary, SentenceForm([false_terminal]), action_41),
+    Production(primary, SentenceForm([nil]), action_42),
+    Production(primary, SentenceForm([number_terminal]), action_43),
+    Production(primary, SentenceForm([string_terminal]), action_44),
+    Production(primary, SentenceForm([id_terminal]), action_45),
 ]
-expr_pred_productions = [
-    Production(expr_pred, SentenceForm([expression]), action_50),
-    Production(expr_pred, SentenceForm([predicate]), action_50),
-]
-predicate_productions = [
-    Production(predicate, SentenceForm([agent_predicate, id_terminal]), action_51),
-    Production(predicate, SentenceForm([empty_predicate, id_terminal]), action_51),
-]
-# context free productions
+# Productions_dict
 productions_dict = {
     program: program_productions,
-    block_stmt: block_stmt_productions,
-    block_stmt_: block_stmt__productions,
-    declaration: declaration_productions,
+    block_dec: block_dec_productions,
+    block_dec_: block_dec__productions,
     fun_declaration: fun_declaration_productions,
-    function: function_productions,
+    type_: type__productions,
     arg_list: arg_list_productions,
     arg_list_: arg_list__productions,
     var_declaration: var_declaration_productions,
@@ -429,10 +503,9 @@ productions_dict = {
     if_stmt: if_stmt_productions,
     while_stmt: while_stmt_productions,
     else_stmt: else_stmt_productions,
-    print_stmt: print_stmt_productions,
-    expression_stmt: expression_stmt_productions,
     expression: expression_productions,
-    assigment: assigment_productions,
+    assignment: assignment_productions,
+    assignment_: assignment__productions,
     logic_or: logic_or_productions,
     logic_or_: logic_or__productions,
     logic_and: logic_and_productions,
@@ -446,12 +519,11 @@ productions_dict = {
     factor: factor_productions,
     factor_: factor__productions,
     unary: unary_productions,
-    primary: primary_producitons,
-    call: call_productions,
-    arg_exps: arg_exps_productions,
-    arg_exps_: arg_exps__productions,
-    expr_pred: expr_pred_productions,
-    predicate: predicate_productions,
+    primary: primary_productions,
+    call_: call__productions,
+    call__: call___productions,
+    param_list: param_list_productions,
+    param_list_: param_list__productions,
 }
 gr = ContextFreeGrammar(
     program,
