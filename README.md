@@ -428,371 +428,148 @@ Por último, se pasa a la ejecución del programa que ha quedado contenido en el
 
 ### Panorama general
 
-EVO es un lenguaje de programación orientado a objetos y de tipado dinámico. El lenguaje permite a los desarrolladores programar soluciones a diversos problemas. Específicamente el lenguaje posee elementos que  facilitan el trabajo con las simulaciones para las cuales este proyecto  fue concebido. La ejecución de un programa escrito en KT se hace en el  lenguaje python, pues el compilador transforma el código KT en código  python.
+EVO es un lenguaje de programación de tipado estático. El lenguaje permite a los desarrolladores programar soluciones a diversos problemas. El lenguaje está dirigido a facilitar el uso del *framework*  desarrollado para la representación de las simulaciones. La ejecución de un programa escrito en EVO se hace en el lenguaje *python*, pues el compilador transforma el código EVO a código *python*.
 
 #### El primer programa
 
 ```python
-Program {
-    print "hello world";
-}
+print("hello world");
 ```
 
-El programa "Hola Mundo" comienza con la declaración de una función cuyo nombre debe ser `main` y y el tipo de retorno debe ser `Void`. Esta función es el punto de partida de la ejecución del programa. La función `print` recibe una instancia de la clase `String` e imprime en consola el texto seguido de un salto de línea. Todas las instrucciones deben terminar con un punto y coma.
+Nuestro lenguaje se ejecuta de manera secuencial, de arriba hacia abajo. Por lo tanto para escribir en la consola `"hello world"` en nuestro lenguaje basta con declarar en la primera línea la función *built-in* **print**. Esta función funciona idénticamente a la de *python*, por lo que es capaz de imprimir los tipos que se usan en el lenguaje. Para señalar en final de una instrucción se utiliza el punto y coma.
 
 #### Tipos y variables
 
-Un tipo define la estructura y el comportamiento de cualquier dato en KT. La declaración de un tipo puede incluir sus miembros, el tipo base y las operaciones permitidas para ese tipo. Una variable es una etiqueta  que hace referencia a una instancia de un tipo específico.
+Como el lenguaje fue pensado para trabajar en conjunto con un framework de simulación solo existen los tipos que consideramos básicos en los lenguajes de programación y algunos tipos de la simulación. Éstos tipos son:
 
-Hay dos grupos de tipos en KT: tipos de valor y tipos de referencia.  Las variables de tipos de valor contienen directamente sus datos. Las  variables de tipos de referencia almacenan referencias a sus datos,  siendo estos últimos conocidos como objetos. Con los tipos de  referencia, es posible que dos variables hagan referencia al mismo  objeto y que las operaciones en una variable afecten al objeto al que  hace referencia la otra variable. Con los tipos de valor, cada variable  tiene su propia copia de los datos y no es posible que las operaciones  en una afecten a la otra. Solo los tipos `Int`, `Float` y `Boolean` son tratados por valor. El resto de los tipos son tratados siempre por refrencia.
+* `number`: Representa los números enteros y los decimales que comienzan con 0.
+* `string`: Representa todas las cadenas, encerradas en comillas dobles, que utilizan el alfabeto latino y los números, además del espacio en blanco y el guión bajo.
+* `bool`: Para contener los valores de verdadero (`True`) o falso (`False`).
+* `Nil`: Este tipo representa el valor nulo del lenguaje.
+* `list`: Para el uso de funciones que necesiten listas. Las listas en nuestro lenguaje son de tipo dinámico.
 
-Un identificador es un nombre de variable. Un identificador es una  secuencia de caracteres ascii sin espacios en blanco. Existen palabras  reservadas en el lenguaje que no pueden ser utilizadas como  identificadores.
+Las siguientes son propias de la simulación y solo se utilizan como contenedoras de valores en EVO.
 
-Los desarrolladores de KT pueden crear nuevos tipos llamados clases (`class`). Estos son tratados siempre por referencia. Un tipo de `class` define una estructura de datos que contiene miembros de datos (campos) y miembros de funciones (métodos, propiedades y otros). Los tipos de  clase admiten la herencia única y el polimorfismo, mecanismos mediante  los cuales las clases derivadas pueden ampliar y especializar las clases base.
+* `agent`
+* `simulator`
+* `master_simulator`
 
-KT admite listas unidimensionales de cualquier tipo. A diferencia de  los tipos enumerados anteriormente, las listas poseen genericidad. Por  ejemplo, `List<Int>` es una lista unidimensional de `Int` y `List<List<Int>>` es una lista unidimensional de listas unidimensionales de `Int`.
+Los tipos básicos son usados para definir la estructura y comportamiento de los datos necesarios para trabajar en la simulación. Representan las clases homólogas en el *framework* de *python*.
 
-KT admite diccionarios con llave y valor genéricos. La llave solo puede ser un tipo entre `Int`, `Float` y `String`, mientras el valor puede ser cualquier tipo válido en el lenguaje. El tipado se puede establecer como `Dict<Int, List<String>>` para hablar de un diccionario de llaves enteras y con listas de cadenas como valor.
+### Funciones
 
-El lenguaje posee inferencia de tipo en la creación de variables,  siempre que sea posible extraer dicha información de la expresión que se asigna. Todos los tipos en el lenguaje son pueden ser `null`, cualquier variable tipada permite la asignación del valor `null`.
+Nuestro lenguaje permite definir funciones de la siguiente forma:
 
-El sistema de tipos está unificado de modo que un valor de cualquier tipo puede tratarse como un `Object`. Cada tipo en KT se deriva directa o indirectamente del tipo de clase de `Object`, y `Object` es la última clase base de todos los tipos.
+````
+fun type ID ( param_list ) { body }
+````
 
-#### Estructura del programa
+La palabra reservada `fun` define que se quiere declarar una función `type` se refiere al tipo de retorno que tiene la función, ID es su nombre, `param_list `es una lista de *types* y *IDs* que representan los parámetros de la función, un parámetro tiene un tipo y un identificador, por último tenemos el cuerpo de la función. 
 
-Los conceptos principales de organización son las clases y las  funciones. El ambiente global puede contener definiciones de clases y  funciones, a la vez las clases pueden contener métodos que podrán ser  llamados a partir de las instancias de estos tipos.
+### Variables
+
+La forma en la que podemos definir una variable en EVO es la siguiente:
 
 ```
-class IntStackNode {
-    fun init(value: Int): Void {
-        attr value: Int = value;
-        attr prev: IntStackNode = null;
+type ID = expression ;
+```
+
+Simplemente definimos que el identificador *ID* es del tipo *type* y le asignamos el valor de la *expression*. En el chequeo semántico revisamos que sean del mismo tipo.
+
+### Declaraciones
+
+EVO permite declaraciones para el control de flujo del programa, dichas declaraciones son:
+
+* `if`
+
+```
+if ( expression ) { body }
+```
+
+* `if-else`
+
+```
+if ( expression ) { body } else { body }
+```
+
+* `while`
+
+```
+while ( expression ) { body }
+```
+
+* `return`
+
+```
+return expression ;
+return ;
+```
+
+En el caso de `return` podemos ver que existen dos formas de declararlo, la primera hace que se devuelva el valor de la expresión. El segundo caso es una comodidad por si no se quiere escribir una expresión pero esto no significa que no se devuelva nada, siempre se devuelve un valor en las funciones, en el segundo caso se devuelve `Nil`.
+
+### Expresiones
+
+Las expresiones son una herramienta importante en el lenguaje, nos permite trabajar con los tipos básicos y realizar las operaciones necesarias en la mayoría de los lenguajes de programación. Con éstas podemos realizar operaciones matemáticas y *booleanas*. Para simplicidad del lenguaje los lugares donde se pueden utilizar las expresiones son pocos, donde realmente haga falta, en los `if`, `while` y declaración de variables.
+
+### Ejemplos de código en EVO
+
+#### program1.evo
+
+```python
+fun bool func(agent ag){
+    if (get_agent_value_gene(ag, "size") <= 5){
+        return True;
     }
+    return False;
 }
-
-class IntStack {
-    fun init(): Void {
-        attr top: IntStackNode = null;
+fun bool func2(agent ag){
+    if (get_agent_value_gene(ag, "speed") <= 5){
+        return True;
     }
-
-    fun pop(): Int {
-        if (this.top == null) {
-            return null;
-        }
-        var top = this.top;
-        this.top = top.prev;
-        return top.value;
-    }
-
-    fun push(value: Int): Void {
-        var top = IntStackNode(value);
-        top.prev = this.top;
-        this.top = top;
-    }
+    return False;
 }
-```
-
-En esta implementación de un `Stack` de `Int`  se pueden apreciar los aspectos antes mencionado. Para referirnos a los  atributos de las instancias en el lenguaje KT utilizamos la palabra  clave `attr` en el momento de su creación, siempre especificando el tipo.
-
-### Clases y objetos
-
-Las clases son los tipos más fundamentales de KT. Una clase es una  estructura de datos que combina estados (campos) y acciones (métodos) en una sola unidad. Una clase proporciona una definición para las  instancias de la clase, también conocidas como objetos. Las clases  admiten la herencia y el polimorfismo, mecanismos mediante los cuales  las clases derivadas pueden ampliar y especializar las clases base.
-
-Las nuevas clases se crean utilizando declaraciones de clase. Una  declaración de clase comienza con un encabezado. El encabezado  especifica:
-
-- El nombre de la clase
-- La clase base (cuando hereda de una clase base)
-
-El siguiente código muestra una declaración de una clase simple llamada `Point`:
-
-```
-class Point {
-    fun init(x: Int, y: Int): Void {
-        attr X: Int = x;
-        attr Y: Int = y;
-    }
-}
-```
-
-Las instancias de clases se crean invocando a la clase, utilizando el constructor para inicializar la instancia y devuelve una referencia a  la instancia. Las siguientes declaraciones crean dos objetos `Point` y almacenan referencias a esos objetos en dos variables:
-
-```
-var p1 = Point(0, 0);
-var p2 = Point(10, 20);
-```
-
-El manejo de la memoria donde se colocan estos objetos ocurre en el lenguaje `python`.
-
-#### Clases base
-
-Una declaración de clase puede especificar una clase base. A  continuación de el nombre de la clase se escribe dos puntos y el nombre  de la clase base. Omitir una especificación de clase base es lo mismo  que derivar del tipo de `Object`. En el siguiente ejemplo, la clase base de `Point3D` es `Point`. Desde el primer ejemplo, la clase base de `Point` es `Object`:
-
-```
-class Point3D: Point {
-    fun init(x: Int, y:Int, z: Int): Void {
-        super.init(x, y);
-        attr Z: Int = z;
-    }
-}
-```
-
-Una clase hereda los miembros de su clase base. La herencia significa que una clase contiene implícitamente todos los miembros de su clase  base. Una clase derivada puede agregar nuevos miembros a los miembros  que hereda, pero no puede eliminar la definición de un miembro heredado. En el ejemplo anterior, `Point3D` hereda los miembros `X` e `Y` de `Point`, y cada instancia de `Point3D` contiene tres propiedades, `X`, `Y` y `Z`.
-
-Otra manera de declarar una clase es a partir de una clase base. Utilizando directamente el nombre de la clase base, seguido de `::` y luego el nombre de la nueva clase.
-
-```
-Point::Point3D {
-    fun init(x: Int, y:Int, z: Int): Void {
-        super.init(x, y);
-        attr Z: Int = z;
-    }
-}
-```
-
-Existe una conversión implícita de un tipo de clase a cualquiera de  sus tipos de clase base. Una variable de un tipo de clase puede hacer  referencia a una instancia de esa clase o una instancia de cualquier  clase derivada. Por ejemplo, dadas las declaraciones de clase  anteriores, una variable de tipo `Point` puede hacer referencia a `Point` o `Point3D`:
-
-```
-var: Point a = Point(10, 20);
-var: Point b = Point3D(10, 20, 30);
-```
-
-### Bloques de construcción del programa
-
-Los tipos descritos en la sección anterior se crean utilizando estos componentes básicos: miembros, expresiones e instrucciones.
-
-#### Members
-
-Los miembros de una clase son miembros de instancia.
-
-La siguiente lista proporciona una descripción general de los tipos de miembros que puede contener una clase:
-
-- Métodos
-- Campos
-- Constructores
-
-#### Campos
-
-Un campo es una variable que está asociada con una instancia de una  clase. Cada instancia de una clase contiene una copia separada de todos  los campos de instancia de esa clase.
-
-En el siguiente ejemplo, cada instancia de la clase `Color` tiene una copia separada de los campos de instancia `R`, `G` y `B`.
-
-```
-class Color {
-    fun init(r: Int, g: Int, b: Int): Void {
-        attr r: Int = r;
-        attr g: Int = g;
-        attr b: Int = b;
-    }
-}
-```
-
-#### Métodos
-
-Un método es un miembro que implementa un cálculo o una acción que  puede realizar un objeto. Se accede a los métodos a través de instancias de la clase.
-
-Los métodos pueden tener una lista de parámetros, que representan  valores o referencias de variables pasadas al método. Los métodos tienen un tipo de devolución, que especifica el tipo de valor calculado y  devuelto por el método. El tipo de devolución de un método es `Void` si devuelve solamente `null` o no devuelve ningún valor.
-
-El nombre de un método debe ser único en la clase en la que se declara el método.
-
-En el siguiente ejemplo se muestra una clase `Time` cuyas instancias poseen un campo `current_time` y un método `skip` que recibe un `Int` y modifica el campo `current_time` de la instancia sumándole ese valor.
-
-```
-class Time {
-    fun init(initial_time: Int): Void {
-        attr current_time: Int = initial_time;
-    }
-
-    fun skip(seconds: Int): Void {
-        this.current_time = this.current_time + seconds;
-    }
-}
-```
-
-A continuación se muestra un ejemplo de invocación de métodos a partir de una instancia.
-
-```
-var t = Time(0);
-t.current_time; // 0
-t.skip(2);
-t.current_time; // 2
-```
-
-##### Parámetros
-
-Los parámetros se utilizan para pasar valores a métodos. Un parámetro corresponde a una variable local que obtiene su valor inicial del  argumento que se pasó para el parámetro. Las modificaciones a la  variable que representan a un parámetro no afectan el argumento que se  pasó para el parámetro.
-
-##### Cuerpo del método y variables locales
-
-El cuerpo de un método especifica las instrucciones que se ejecutarán cuando se invoque el método.
-
-El cuerpo de un método puede declarar variables que son específicas  de la invocación del método. Estas variables se denominan variables  locales. Una declaración de variable local especifica un nombre de  variable, un nombre de tipo opcional y un valor inicial. El siguiente  ejemplo declara una variable local i con un valor inicial de cero y una  variable `j` en cada iteración del ciclo con valor `i * i`.
-
-```
-fun WriteSquares(): Void {
-    var i = 0;
-    while (i < 10)
-    {
-        var j = i * i;
-        print(i + " x " + i + " = " + j);
+fun list agent_dis(){
+    list l = create_list();
+    number i = 0;
+    while(i < 30){
         i = i + 1;
+        add_elem_to_list(l, create_agent());
     }
+    return l; 
 }
+list p = create_list();
+add_elem_to_list(p, "size");
+add_elem_to_list(p, "speed");
+list pp = create_list();
+add_elem_to_list(pp, func);
+add_elem_to_list(pp, func2);
+master_simulator ms = create_master_simulator(10,10,10,10,0);
+set_ms_agents_distribution(ms, agent_dis);
+fun number food_dis(simulator s){
+    return 500 - get_simulation_day(s) * 5;
+}
+set_ms_food_distribution(ms, food_dis);
+run_ms_with_mf(ms,p,pp);
 ```
 
-KT requiere que se asigne una variable local en el momento de su creación.
+#### program2.evo
 
-Un método puede usar declaraciones de retorno para devolver el  control a el método donde fue invocado. En un método que devuelve `Void`, las declaraciones de devolución no deben especificar una expresión y en caso de hacerlo esta debe ser `null`, el método puede omitir la declaración de retorno. En un método que  devuelve valores no nulos, las declaraciones de devolución deben incluir una expresión que calcule el valor devuelto.
+```python
+simulator s = create_simulator();
+agent a = create_agent();
+create_world(s, 10, 10, 0);
+add_agent_to_simulation(s, a);
 
-##### Anulación de métodos
-
-La declaración de un método en una clase anula todas las  declaraciones de ese método en las clases base. Sin embargo la signatura del método tendrá restricciones, tendrá que tener los mismos  argumentos, abiertos a contravarianza sobre su tipo, y el tipo de  retorno del nuevo método podrá ser el mismo o uno más específico que el  método anulado.
-
-```
-class Point {
-    fun init(x: Int, y: Int): Void {
-        attr X: Int = x;
-        attr Y: Int = y;
+fun bool func(agent ag){
+    if (get_agent_value_gene(ag, "size") <= 5){
+        return True;
     }
+    return False;
 }
-
-Point::Point3D {
-    fun init(x: Int, y:Int, z: Int): Void {
-        super.init(x, y);
-        attr Z: Int = z;
-    }
-}
-
-class PointFactory {
-    fun new_point(point: Point3D): Point { return Point(point.X, point.Y); }
-}
-
-class Point3DFactory: PointFactory {
-    fun new_point(point: Point): Point3D { return Point3D(point.X, point.Y, 0); }
-}
+list l = create_list();
+add_elem_to_list(l, "size <= 5");
+list f = create_list();
+add_elem_to_list(f, func);
+simulate_with_mf(s, l, f);
 ```
 
-##### Constructores
-
-Un constructor se declara como un método con tipo de retorno `Void` y con el nombre especial `init`. Si no se proporciona un constructor de instancias para una clase, se  proporciona automáticamente uno vacío sin parámetros. Si la clase hereda de una clase base y declara un constructor deberá hacer un llamado al  constructor de la clase base en su primer enunciado, si no se declara  constructor, se utlizará directamente el constructor de la clase padre.
-
-#### Declaraciones y enunciados
-
-Las acciones de un programa se expresan mediante sentencias. KT  admite varios tipos diferentes de declaraciones, algunas de las cuales  se definen en términos de declaraciones incrustadas.
-
-- Un bloque permite que se escriban varias declaraciones en contextos  en los que se permite una sola declaración. Un bloque consta de una  lista de sentencias escritas entre los delimitadores `{` y `}`.
-- Las sentencias de declaración se utilizan para declarar variables locales.
-- Las sentencias de expresión se utilizan para evaluar expresiones.  Las expresiones que se pueden usar como declaraciones incluyen  invocaciones de métodos, asignaciones de objetos, asignaciones usando `=` y los operadores de asignación compuesta y operaciones aritméticas.
-- Las declaraciones de selección se utilizan para seleccionar una de  varias declaraciones posibles para su ejecución en función del valor de  alguna expresión. Este grupo contiene las sentencias `if` y `switch`.
-- Las declaraciones de iteración se utilizan para ejecutar  repetidamente una declaración incrustada. Este grupo contiene las  sentencias `while` y `for`.
-- Las declaraciones de salto se utilizan para transferir el control. Este grupo contiene las sentencias `break`, `continue` y `return`.
-
-A continuación se enumeran los tipos de sentencias que se pueden utilizar:
-
-- Declaración de variables locales.
-- Declaración de expresión.
-- Declaración `if-else`.
-- Declaración `switch`.
-- Declaración `while`.
-- Declaración `for`.
-- Declaración `break`.
-- Declaración `continue`.
-- Declaración `return`.
-
-##### Declaración `if-else`
-
-En KT las sentencias condicionales comienzan con la palabra clave `if` seguido de una expresión entre paréntesis, que debe evaluar a una instancia del tipo `Boolean`, seguido de un bloque de código a ejecutar si la condición evalua `true`. La palabra clave `else` puede colocarse al continuación de este bloque, seguida de un bloque de código, que se ejecutará en caso de que la condición evalúe `false`.
-
-```
-var a: Int = 4;
-var b: Int = 5;
-if (a > b) {
-    print(a + " is greater than " + b);
-} else {
-    print(b + " is greater or equal than " + a);
-}
-```
-
-##### Declaración `switch`.
-
-KT posee la declaración `switch` para tratar de forma  segura a una instancia asociada a un tipo como una instancia de un tipo  más específico. La declaración comienza con la palabra clave `switch` seguida del nombre de una variable y `:`, y luego una serie de declaraciones `case`, cada declaración comienza con la palabra clave `case` seguida de la clase como la que se intentará tratar a la variable y un  bloque de código que se ejecutará en caso de que el objeto sea una  instancia de esta clase, o de una subclase de esta clase. Solo se  ejecutará el primer bloque de código cuya condición evalúe `true`, además se podrá establecer un bloque por defecto, que debe empezar con la palabra clave `default`, seguida de este bloque que se desea ejecutar.
-
-En el ambiente del bloque de código, el objeto será tratado como una  instancia de la clase especificada, y se podrá acceder a sus atributos  de manera segura. Solo pueden especificarse clases que sean subclases de la clase con la que la variable estaba siendo tratada.
-
-```
-var point: Point = Point3D(1, 2, 3);
-switch point:
-    case Point3D {
-        print("It's a 3D point, it's Z value is " + point.Z);
-    }
-    default {
-        print("It's just a Point.");
-    }
-```
-
-##### Declaración `while`
-
-Posee la misma sintaxis que la declaración `if`, excepto que la palabra clave para comenzar esta declaración es `while` y no posee una declaración `else`. Esta declaración evalúa la condición, y si evalúa a `true`, ejecuta el bloque de código, luego repite este proceso hasta que la condición evalúe `false`.
-
-```
-fun countdown(n: Int): Void {
-    while (n > 0) {
-        print(n - 1);
-        n = n - 1;
-    }
-}
-```
-
-##### Declaración `for`.
-
-KT posee una declaración `for` para iterar listas y las llaves de los diccionarios. La sintaxis de esta estructura comienza por la palabra clave `for`, seguida entre paréntesis de la palabra clave `var`, un nombre de variable, el caracter `:` y la lista o diccionario a iterar, luego de los paréntesis se encuentra el bloque de código que se ejecutará en ciclo. En este bloque de  código, existirá la variable declarada entre paréntisis, su tipo será  inferido de la colección, y en cada iteración tomará el próximo valor de la colección hasta recorrerlos todos.
-
-```
-fun squares(list: List<Int>): List<Int> {
-    var new_list: List<Int> = [];
-    for (var elem: list) {
-        new_list.append(elem * elem);
-    }
-    return new_list;
-}
-```
-
-##### Declaración `break`.
-
-La declaración `break` solo puede utilizarse en un bloque de código de un ciclo `while` o `for`. Esta declaración se utiliza para terminar la ejecución de dicho ciclo.
-
-```
-fun first_k_numbers(list: List<Int>, k: Int): List<Int> {
-    var new_list: List<Int> = [];
-    for (var elem: list) {
-        if (k == 0) {
-            break;
-        }
-        new_list.append(elem);
-        k = k - 1;
-    }
-    return new_list;
-}
-```
-
-##### Declaración `continue`.
-
-La declaración `continue` solo puede utilizarse en un bloque de código de un ciclo `while` o `for`. Esta declaración se utiliza para terminar la ejecución de la iteración actual de dicho ciclo.
-
-A continuación se muestra un ejemplo, donde se toman de una lista de enteros solamente los números pares.
-
-```
-fun even_numbers(list: List<Int>): List<Int> {
-    var new_list: List<Int> = [];
-    for (var elem: list) {
-        if (elem % 2 != 0) {
-            continue;
-        }
-        new_list.append(elem);
-    }
-    return new_list;
-}
-```
-
-##### Declaración `return`.
-
-La declaración `return` solo puede utilizarse en un bloque de código de un método. Se utiliza para finalizar la ejecución del  método y devolver la expresión que se encuentra a la drecha de la  palabra clave `return`, en caso de no estar acompañado de una expresión devuelve `null`.
